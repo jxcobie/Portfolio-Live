@@ -1,0 +1,295 @@
+/* ==================== WCAG AA FOCUS INDICATORS ==================== */
+.home-page .nav-item:focus,
+.home-page .nav-item:focus-visible {
+  outline: 3px solid var(--cyber-cyan);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px var(--dark-bg),
+    0 0 0 5px var(--cyber-cyan),
+    0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.mobile-menu-button:focus,
+.mobile-menu-button:focus-visible {
+  outline: 3px solid var(--cyber-cyan);
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 2px var(--dark-bg),
+    0 0 0 5px var(--cyber-cyan);
+}
+
+/* ==================== MOBILE MENU ==================== */
+/* Desktop navigation - hide on mobile */
+.desktop-nav {
+  display: flex;
+}
+
+/* Mobile menu button - hidden by default */
+.mobile-menu-button {
+  display: none;
+  background: rgba(10, 10, 20, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 0 30px rgba(0, 255, 136, 0.1),
+    inset 0 0 20px rgba(0, 255, 136, 0.05);
+  z-index: 1001;
+  position: relative;
+}
+
+.mobile-menu-button:hover {
+  border-color: var(--cyber-cyan);
+  box-shadow:
+    0 0 40px rgba(0, 255, 136, 0.2),
+    inset 0 0 25px rgba(0, 255, 136, 0.1);
+}
+
+.mobile-menu-button:active {
+  transform: scale(0.95);
+}
+
+/* Hamburger icon */
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 18px;
+  position: relative;
+}
+
+.hamburger-icon .line {
+  width: 100%;
+  height: 2px;
+  background: var(--cyber-cyan);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px var(--cyber-cyan);
+}
+
+.hamburger-icon .line:not(:last-child) {
+  margin-bottom: 5px;
+}
+
+/* Animated hamburger icon when open */
+.hamburger-icon .line.open:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger-icon .line.open:nth-child(2) {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.hamburger-icon .line.open:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile navigation overlay */
+.mobile-nav-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background: rgba(10, 10, 20, 0.98);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid var(--border-color);
+  box-shadow:
+    -10px 0 50px rgba(0, 0, 0, 0.5),
+    inset 0 0 100px rgba(0, 255, 136, 0.03);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 80px 30px 30px;
+}
+
+/* Mobile navigation content */
+.mobile-nav-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Mobile navigation items */
+.home-page .nav-item.mobile {
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 14px;
+  letter-spacing: 2px;
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.1);
+  transition: all 0.3s ease;
+}
+
+.home-page .nav-item.mobile:hover {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: var(--cyber-cyan);
+  transform: translateX(5px);
+  box-shadow:
+    0 5px 20px rgba(0, 255, 136, 0.2),
+    inset 0 0 10px rgba(0, 255, 136, 0.1);
+}
+
+.home-page .nav-item.mobile.active {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: var(--cyber-cyan);
+  box-shadow:
+    0 5px 20px rgba(0, 255, 136, 0.3),
+    inset 0 0 15px rgba(0, 255, 136, 0.15);
+}
+
+.home-page .nav-item.mobile:focus,
+.home-page .nav-item.mobile:focus-visible {
+  outline: 3px solid var(--cyber-cyan);
+  outline-offset: 2px;
+}
+
+/* Mobile overlay scanline effect */
+.mobile-nav-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.03;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 136, 0.1) 2px,
+    rgba(0, 255, 136, 0.1) 4px
+  );
+}
+
+/* ==================== RESPONSIVE BREAKPOINTS ==================== */
+@media (max-width: 1024px) {
+  .home-page .floating-navbar-fixed {
+    padding: 0 30px;
+  }
+
+  .home-page .navbar-pill {
+    padding: 10px 16px;
+    gap: 4px;
+  }
+
+  .home-page .nav-item {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Hide desktop navigation */
+  .desktop-nav {
+    display: none !important;
+  }
+
+  /* Show mobile menu button */
+  .mobile-menu-button {
+    display: flex;
+    justify-self: end;
+  }
+
+  /* Adjust navbar layout for mobile */
+  .home-page .floating-navbar-fixed {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 20px;
+    gap: 10px;
+  }
+
+  /* Keep status indicators visible on tablet/mobile */
+  .home-page .navbar-status-left,
+  .home-page .navbar-status-right {
+    display: flex;
+  }
+
+  /* Adjust status indicator size */
+  .home-page .system-indicator,
+  .home-page .system-status {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .home-page .indicator-dot,
+  .home-page .status-indicator {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Mobile overlay full width on small screens */
+  .mobile-nav-overlay {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Further adjustments for small mobile */
+  .home-page .floating-navbar-fixed {
+    padding: 0 15px;
+  }
+
+  /* Hide status text, keep only dots */
+  .home-page .navbar-status-left .mono-text,
+  .home-page .navbar-status-right .mono-text {
+    display: none;
+  }
+
+  /* Adjust mobile menu button size */
+  .mobile-menu-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hamburger-icon {
+    width: 20px;
+    height: 15px;
+  }
+
+  /* Mobile nav items */
+  .home-page .nav-item.mobile {
+    padding: 14px 20px;
+    font-size: 13px;
+  }
+}
+
+/* ==================== REDUCED MOTION SUPPORT ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .home-page .nav-item,
+  .mobile-menu-button,
+  .hamburger-icon .line,
+  .mobile-nav-overlay {
+    transition: none;
+    animation: none;
+  }
+
+  .mobile-nav-overlay::before {
+    animation: none;
+  }
+}
+
+/* ==================== HIGH CONTRAST MODE SUPPORT ==================== */
+@media (prefers-contrast: high) {
+  .home-page .nav-item:focus,
+  .mobile-menu-button:focus {
+    outline-width: 4px;
+    outline-color: #fff;
+  }
+
+  .home-page .nav-item.active {
+    background: var(--cyber-cyan);
+    color: #000;
+  }
+}

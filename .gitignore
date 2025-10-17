@@ -1,0 +1,113 @@
+# ==================== ROOT LEVEL ====================
+
+# Backup folders
+/husky-backup/
+/backup/
+/backup2/
+/old/
+/temp/
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# ==================== PORTFOLIO-WEBSITE ====================
+
+# Dependencies
+Portfolio-website/node_modules/
+Portfolio-website/.pnp
+Portfolio-website/.pnp.js
+
+# Next.js
+Portfolio-website/.next/
+Portfolio-website/out/
+
+# Production
+Portfolio-website/build/
+Portfolio-website/dist/
+
+# Testing
+Portfolio-website/coverage/
+
+# Environment files
+Portfolio-website/.env
+Portfolio-website/.env*.local
+
+# Vercel
+Portfolio-website/.vercel
+
+# TypeScript
+Portfolio-website/*.tsbuildinfo
+Portfolio-website/next-env.d.ts
+
+# Logs
+Portfolio-website/npm-debug.log*
+Portfolio-website/yarn-debug.log*
+Portfolio-website/yarn-error.log*
+
+# CMS (old location - no longer used)
+Portfolio-website/cms/
+
+# ==================== PORTFOLIO-CMS ====================
+
+# Dependencies
+Portfolio-CMS/node_modules/
+
+# Database (exclude from git)
+Portfolio-CMS/*.db
+Portfolio-CMS/*.db-journal
+Portfolio-CMS/*.sqlite
+Portfolio-CMS/*.sqlite3
+
+# Uploads (exclude from git, use cloud storage)
+Portfolio-CMS/uploads/*
+!Portfolio-CMS/uploads/.gitkeep
+
+# Environment files
+Portfolio-CMS/.env
+Portfolio-CMS/.env.local
+
+# Logs
+Portfolio-CMS/logs/
+Portfolio-CMS/*.log
+Portfolio-CMS/npm-debug.log*
+
+# Backups
+Portfolio-CMS/backups/
+Portfolio-CMS/*.backup
+
+# Temporary files
+Portfolio-CMS/tmp/
+Portfolio-CMS/temp/
+Portfolio-CMS/*.tmp
+
+# ==================== GLOBAL IGNORES ====================
+
+# Node modules anywhere
+**/node_modules/
+
+# Environment files
+**/.env
+**/.env.local
+**/.env*.local
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/*.log
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Misc
+**/*.pem
+**/*.tsbuildinfo
