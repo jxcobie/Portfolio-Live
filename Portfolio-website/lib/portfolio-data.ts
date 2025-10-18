@@ -1,4 +1,4 @@
-import { PortfolioData } from '@/app/types/portfolio';
+import { PortfolioData } from '@/lib/types';
 
 /**
  * Mock portfolio database - In production, this would be replaced with actual database queries

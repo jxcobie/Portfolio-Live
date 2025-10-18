@@ -23,7 +23,7 @@ const GlitchText = memo<GlitchTextProps>(
           setDisplayText(
             originalText.current
               .split('')
-              .map((char, index) => {
+              .map((_char, index) => {
                 if (index < iterations) return originalText.current[index];
                 return chars[Math.floor(Math.random() * chars.length)];
               })

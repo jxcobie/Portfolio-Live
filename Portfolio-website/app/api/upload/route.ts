@@ -55,11 +55,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'File name required' }, { status: 400 });
     }
 
-    const filePath = join(process.cwd(), 'public', 'uploads', fileName);
+    const _filePath = join(process.cwd(), 'public', 'uploads', fileName);
 
     // In a real implementation, you'd delete the file from filesystem
     // For now, we'll just return success
-    // await unlink(filePath);
+    // await unlink(_filePath);
 
     return NextResponse.json({ success: true });
   } catch (error) {

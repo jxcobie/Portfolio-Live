@@ -65,7 +65,6 @@ const App = memo(() => {
   // Memoized callback for hero animation completion
   const handleHeroAnimationComplete = useCallback(() => {
     // Optional: Track analytics or perform other actions
-    console.log('Hero animation completed');
   }, []);
 
   return (

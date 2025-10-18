@@ -725,6 +725,64 @@ export interface MotionProps {
   viewport?: { once?: boolean; amount?: number };
 }
 
+/**
+ * Motion wrapper component props
+ */
+export interface MotionWrapperProps {
+  children: ReactNode;
+  className?: string;
+  initial?: object;
+  animate?: object;
+  transition?: object;
+  viewport?: object;
+}
+
+/**
+ * Status variant type for project status styling
+ */
+export type StatusVariant = 'deployed' | 'active' | 'in-dev' | 'default';
+
+/**
+ * Form field props for dynamic form generation
+ */
+export interface FormFieldProps {
+  label: string;
+  name: string;
+  type?: 'text' | 'email' | 'textarea';
+  required?: boolean;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+  maxLength?: number;
+  minLength?: number;
+}
+
+/**
+ * Navigation component props
+ */
+export interface NavigationProps {
+  activeSection?: string;
+  onSectionChange?: (section: string) => void;
+}
+
+/**
+ * Intro animation props for hero section
+ */
+export interface IntroAnimationProps {
+  onComplete: () => void;
+  logoLines: string[];
+  slogan: string;
+}
+
+/**
+ * Component error interface
+ */
+export interface ComponentError {
+  message: string;
+  stack?: string;
+  componentStack?: string;
+}
+
 // ==================== CMS DATA TYPES ====================
 
 /**

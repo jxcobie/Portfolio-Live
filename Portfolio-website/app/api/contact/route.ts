@@ -6,8 +6,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    console.log('Received contact form submission:', body);
-
     // Validate required fields
     if (!body.name || !body.email || !body.message) {
       return NextResponse.json(
@@ -32,8 +30,6 @@ export async function POST(request: Request) {
     }
 
     // Send to CMS
-    console.log('Forwarding to CMS:', `${CMS_URL}/api/messages`);
-
     const response = await fetch(`${CMS_URL}/api/messages`, {
       method: 'POST',
       headers: {
@@ -47,8 +43,6 @@ export async function POST(request: Request) {
       }),
     });
 
-    console.log('CMS Response Status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error('CMS Error:', errorText);
@@ -57,7 +51,6 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('CMS Response:', data);
 
     // Track analytics (optional, don't block on this)
     fetch(`${CMS_URL}/api/analytics/track`, {
@@ -75,7 +68,9 @@ export async function POST(request: Request) {
         page_url: '/contact',
         referrer: request.headers.get('referer') || '',
       }),
-    }).catch((err) => console.log('Analytics tracking failed (non-blocking):', err));
+    }).catch(() => {
+      // Analytics tracking failed (non-blocking, silently ignore)
+    });
 
     return NextResponse.json({
       success: true,

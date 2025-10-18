@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { RateLimitInfo } from '@/app/types/portfolio';
+import { RateLimitInfo } from '@/lib/types';
 
 /**
  * Simple in-memory rate limiter for API endpoints

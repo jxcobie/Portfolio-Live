@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         );
       }
     } catch (cmsError) {
-      console.log('CMS not available, using mock data');
+      // CMS not available, fall back to mock data
     }
 
     // Fallback to mock data

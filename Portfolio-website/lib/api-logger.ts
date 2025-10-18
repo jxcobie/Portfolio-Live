@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { RequestMetadata } from '@/app/types/portfolio';
+import { RequestMetadata } from '@/lib/types';
 
 /**
  * API request logging utilities

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Project, StatusVariant } from '@/app/types';
+import { normalizeProjectId, getStatusVariant } from '@/lib/utils';
 import SectionHeader from '../shared/SectionHeader';
 import GlitchText from '../shared/GlitchText';
 import LoadingState from '../shared/LoadingState';
@@ -16,16 +17,7 @@ interface ProjectCardProps {
 
 const ProjectCard = memo<ProjectCardProps>(({ project, index }) => {
   const getStatusClass = useCallback((status: string): StatusVariant => {
-    switch (status.toLowerCase()) {
-      case 'deployed':
-        return 'deployed';
-      case 'active':
-        return 'active';
-      case 'in dev':
-        return 'in-dev';
-      default:
-        return 'default';
-    }
+    return getStatusVariant(status);
   }, []);
 
   return (
@@ -40,7 +32,7 @@ const ProjectCard = memo<ProjectCardProps>(({ project, index }) => {
       className="project-card-wrapper"
     >
       <Link
-        href={`/projects/${project.id}`}
+        href={`/projects/${normalizeProjectId(project.id)}`}
         className="project-card-link"
         aria-label={`View details for ${project.title}`}
       >
@@ -151,7 +143,7 @@ const ProjectsGrid = memo<ProjectsGridProps>(({ projects, loading, error }) => {
   return (
     <div className="projects-grid">
       {projects.map((project, index) => (
-        <ProjectCard key={project.id} project={project} index={index} />
+        <ProjectCard key={normalizeProjectId(project.id)} project={project} index={index} />
       ))}
     </div>
   );

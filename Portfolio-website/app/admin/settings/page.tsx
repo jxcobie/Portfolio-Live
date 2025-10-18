@@ -17,14 +17,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Settings,
   Save,
   RefreshCw,
   Database,
   Globe,
   Mail,
   Shield,
-  Palette,
   Zap,
 } from 'lucide-react';
 

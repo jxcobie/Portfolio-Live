@@ -117,8 +117,6 @@ function useActiveSection(navItems: NavItem[]): UseActiveSection {
       const element = document.getElementById(item.id);
       if (element) {
         observer.observe(element);
-      } else {
-        console.warn(`Section with id "${item.id}" not found in DOM`);
       }
     });
 
@@ -322,7 +320,7 @@ MobileMenuButton.displayName = 'MobileMenuButton';
  *   navItems={customNavItems}
  *   timeZone="Asia/Tokyo"
  *   locationLabel="TOKYO"
- *   onNavigate={(id) => console.log(`Navigating to ${id}`)}
+ *   onNavigate={(id) => handleNavigate(id)}
  * />
  * ```
  */
@@ -385,8 +383,6 @@ export const FloatingNavbar = memo<FloatingNavbarProps>(
 
           // Call optional callback
           onNavigate?.(sectionId);
-        } else {
-          console.warn(`Section with id "${sectionId}" not found`);
         }
       },
       [onNavigate]

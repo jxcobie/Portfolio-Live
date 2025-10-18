@@ -2,19 +2,18 @@ import { NextResponse } from 'next/server';
 
 const CMS_URL = process.env.CMS_URL || 'http://localhost:1337';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('Fetching project with ID:', params.id);
+    // Await params in Next.js 15
+    const { id } = await params;
 
     // First, try to fetch from the public endpoint
-    const response = await fetch(`${CMS_URL}/api/projects/public/${params.id}`, {
+    const response = await fetch(`${CMS_URL}/api/projects/public/${id}`, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log('CMS Response status:', response.status);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -24,7 +23,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const data = await response.json();
-    console.log('Project data received:', data.project ? 'Yes' : 'No');
 
     return NextResponse.json({
       project: data.project,
@@ -34,17 +32,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     // Fallback: Try to fetch all projects and find the one we need
     try {
-      console.log('Attempting fallback: fetching all projects');
       const allProjectsResponse = await fetch(`${CMS_URL}/api/projects/public`, {
         cache: 'no-store',
       });
 
       if (allProjectsResponse.ok) {
         const allData = await allProjectsResponse.json();
-        const project = allData.projects?.find((p: any) => p.id === parseInt(params.id));
+        const project = allData.projects?.find((p: any) => p.id === parseInt(id));
 
         if (project) {
-          console.log('Found project in fallback method');
           // Fetch the full project details by making a direct database query
           // For now, return what we have
           return NextResponse.json({

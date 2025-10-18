@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { normalizeProjectId, getStatusVariant } from '@/lib/utils';
 import styles from './projects.module.css';
 
 interface Technology {
@@ -12,7 +13,7 @@ interface Technology {
 }
 
 interface Project {
-  id: number;
+  id: string | number;
   title: string;
   slug: string;
   description: string;
@@ -75,12 +76,13 @@ const GlitchText = ({ children, scramble = false }: { children: string; scramble
 
 const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
   const getStatusClass = (status: string) => {
-    switch (status.toLowerCase()) {
+    const variant = getStatusVariant(status);
+    switch (variant) {
       case 'deployed':
         return styles.statusDeployed;
       case 'active':
         return styles.statusActive;
-      case 'in dev':
+      case 'in-dev':
         return styles.statusInDev;
       default:
         return styles.statusDefault;
@@ -98,7 +100,7 @@ const ProjectCard = ({ project, index }: { project: Project; index: number }) =>
       }}
       className={styles.projectCardWrapper}
     >
-      <Link href={`/projects/${project.id}`} className={styles.projectCardLink}>
+      <Link href={`/projects/${normalizeProjectId(project.id)}`} className={styles.projectCardLink}>
         <article className={styles.projectCard}>
           {/* Cyber border effect */}
           <div className={styles.cardBorderEffect}></div>
@@ -249,20 +251,210 @@ export default function ProjectsPage() {
 
   const filterCounts = getFilterCounts();
 
+  // Skeleton Card Component
+  const SkeletonCard = ({ index }: { index: number }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.6,
+        delay: index * 0.1,
+        ease: [0.21, 1.11, 0.81, 0.99],
+      }}
+      className={styles.projectCardWrapper}
+    >
+      <div className={styles.projectCard} style={{ opacity: 0.6 }}>
+        {/* Cyber border effect */}
+        <div className={styles.cardBorderEffect}></div>
+
+        {/* Image Skeleton */}
+        <div className={styles.projectImageContainer} style={{
+          background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+          backgroundSize: '200% 100%',
+          animation: 'shimmer 2s infinite',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animationDelay: `${index * 0.1}s`
+        }}>
+          <span style={{ color: 'rgba(0, 255, 136, 0.4)', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+            [LOADING_IMAGE...]
+          </span>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className={styles.projectContent}>
+          {/* Status Badge Skeleton */}
+          <div style={{
+            height: '1.5rem',
+            width: '7rem',
+            background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 2s infinite',
+            marginBottom: '0.75rem',
+            border: '1px solid rgba(0, 255, 136, 0.2)',
+            animationDelay: `${index * 0.1 + 0.1}s`
+          }}></div>
+
+          {/* Title Skeleton */}
+          <div style={{
+            height: '1.75rem',
+            width: '80%',
+            background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 2s infinite',
+            marginBottom: '0.75rem',
+            border: '1px solid rgba(0, 255, 136, 0.2)',
+            animationDelay: `${index * 0.1 + 0.2}s`
+          }}></div>
+
+          {/* Description Skeleton */}
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{
+              height: '1rem',
+              width: '100%',
+              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              marginBottom: '0.5rem',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              animationDelay: `${index * 0.1 + 0.3}s`
+            }}></div>
+            <div style={{
+              height: '1rem',
+              width: '90%',
+              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              marginBottom: '0.5rem',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              animationDelay: `${index * 0.1 + 0.4}s`
+            }}></div>
+            <div style={{
+              height: '1rem',
+              width: '70%',
+              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              animationDelay: `${index * 0.1 + 0.5}s`
+            }}></div>
+          </div>
+
+          {/* Tech Stack Skeleton */}
+          <div className={styles.techStack}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} style={{
+                height: '1.5rem',
+                width: '4rem',
+                background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+                animationDelay: `${index * 0.1 + 0.6 + i * 0.05}s`
+              }}></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
   if (loading) {
     return (
       <div className={styles.projectsPage}>
+        {/* Background Effects */}
         <div className={styles.cyberGrid}></div>
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingText}>
-            <span>[LOADING_PROJECT_DATABASE]</span>
-            <div className={styles.loadingDots}>
-              <span>.</span>
-              <span>.</span>
-              <span>.</span>
-            </div>
+        <div className={styles.dataStream}></div>
+        <div className={styles.crtOverlay}></div>
+
+        {/* Navigation */}
+        <nav className={styles.navigation}>
+          <div className={styles.backLink} style={{ opacity: 0.3 }}>
+            <span className={styles.backArrow}>←</span>
+            <span>[LOADING...]</span>
           </div>
+        </nav>
+
+        {/* Header */}
+        <header className={styles.pageHeader}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className={styles.headerContent}
+            style={{ opacity: 0.6 }}
+          >
+            <div className={styles.headerTag}>[PROJECT_ARCHIVE]</div>
+            <div style={{
+              height: '3rem',
+              width: '60%',
+              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              marginBottom: '1rem',
+              border: '1px solid rgba(0, 255, 136, 0.2)'
+            }}></div>
+            <div className={styles.headerLine}></div>
+            <div style={{
+              height: '1.5rem',
+              width: '80%',
+              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              border: '1px solid rgba(0, 255, 136, 0.2)'
+            }}></div>
+          </motion.div>
+        </header>
+
+        {/* Filters Skeleton */}
+        <section className={styles.filtersSection}>
+          <div className={styles.filtersContainer}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} style={{
+                height: '2.5rem',
+                width: '8rem',
+                background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+                animationDelay: `${i * 0.1}s`
+              }}></div>
+            ))}
+          </div>
+        </section>
+
+        {/* Skeleton Cards */}
+        <main className={styles.projectsContainer}>
+          <div className={styles.projectsGrid}>
+            {[...Array(6)].map((_, index) => (
+              <SkeletonCard key={index} index={index} />
+            ))}
+          </div>
+        </main>
+
+        {/* Loading Message */}
+        <div style={{
+          textAlign: 'center',
+          marginTop: '2rem',
+          fontFamily: 'monospace',
+          color: 'rgba(0, 255, 136, 0.7)',
+          fontSize: '0.875rem'
+        }}>
+          <motion.span
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            [LOADING_PROJECT_DATABASE...]
+          </motion.span>
         </div>
+
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -347,7 +539,7 @@ export default function ProjectsPage() {
               className={styles.projectsGrid}
             >
               {filteredProjects.map((project, index) => (
-                <ProjectCard key={project.id} project={project} index={index} />
+                <ProjectCard key={normalizeProjectId(project.id)} project={project} index={index} />
               ))}
             </motion.div>
           ) : (

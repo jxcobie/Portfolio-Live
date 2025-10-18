@@ -209,8 +209,6 @@ const ContactSection = memo(() => {
       setIsSubmitting(true);
 
       try {
-        console.log('Submitting form data:', data);
-
         const response = await fetch('/api/contact', {
           method: 'POST',
           headers: {
@@ -220,7 +218,6 @@ const ContactSection = memo(() => {
         });
 
         const result = await response.json();
-        console.log('Response:', response.status, result);
 
         if (response.ok && result.success) {
           return {

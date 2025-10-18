@@ -248,39 +248,16 @@ function checkAuthentication(request: NextRequest): boolean {
 }
 
 /**
- * Get geolocation from Cloudflare headers (if available)
- */
-function getGeolocation(request: NextRequest): {
-  country?: string;
-  city?: string;
-  region?: string;
-} {
-  return {
-    country: request.headers.get('cf-ipcountry') || undefined,
-    city: request.headers.get('cf-ipcity') || undefined,
-    region: request.headers.get('cf-region') || undefined,
-  };
-}
-
-/**
  * Log request for monitoring
  */
 function logRequest(
-  requestId: string,
-  request: NextRequest,
-  startTime: number,
-  statusCode?: number
+  _requestId: string,
+  _request: NextRequest,
+  _startTime: number,
+  _statusCode?: number
 ): void {
-  if (!IS_PRODUCTION) {
-    const duration = Date.now() - startTime;
-    const pathname = request.nextUrl.pathname;
-    const method = request.method;
-    const ip = getClientIp(request);
-
-    console.log(
-      `[${new Date().toISOString()}] [${requestId}] ${method} ${pathname} - ${statusCode || '...'} (${duration}ms) - IP: ${ip}`
-    );
-  }
+  // Request logging removed for production
+  // Could be replaced with proper logging service in the future
 }
 
 // ==================== SECURITY HEADERS ====================
@@ -517,8 +494,9 @@ export async function middleware(request: NextRequest) {
     // ==================== GEOLOCATION-BASED LOGIC ====================
 
     // Example: Redirect users from specific countries (if needed)
-    // const geo = getGeolocation(request);
-    // if (geo.country === 'CN' && pathname === '/') {
+    // Get geo from Cloudflare headers: request.headers.get('cf-ipcountry')
+    // const geoCountry = request.headers.get('cf-ipcountry');
+    // if (geoCountry === 'CN' && pathname === '/') {
     //   return NextResponse.redirect(new URL('/zh', request.url));
     // }
 

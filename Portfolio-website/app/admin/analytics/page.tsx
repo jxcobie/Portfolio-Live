@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -29,7 +28,6 @@ import {
   TrendingDown,
   Eye,
   Mail,
-  FolderOpen,
   Calendar,
   Users,
   Globe,
@@ -80,7 +78,6 @@ export default function AnalyticsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [messages, setMessages] = useState([]);
   const [timeRange, setTimeRange] = useState('30d');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,8 +97,6 @@ export default function AnalyticsPage() {
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import {
   getPortfolioData,
   getPortfolioSection,
@@ -18,10 +17,31 @@ import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { apiLogger } from '@/lib/api-logger';
 import {
   PortfolioData,
-  PortfolioApiResponse,
-  ErrorResponse,
   ValidationError,
 } from '@/app/types/portfolio';
+
+/**
+ * Portfolio API Response Type
+ */
+interface PortfolioApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  timestamp: string;
+  requestId?: string;
+}
+
+/**
+ * Error Response Type
+ */
+interface ErrorResponse {
+  success: false;
+  error: string;
+  details?: ValidationError[];
+  timestamp: string;
+  requestId?: string;
+  stack?: string;
+}
 
 /**
  * CORS headers configuration
@@ -117,11 +137,9 @@ export async function OPTIONS(): Promise<NextResponse> {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  let requestId: string;
+  const requestId = apiLogger.logRequest(request);
 
   try {
-    // Log request start
-    requestId = apiLogger.logRequest(request);
 
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'GET');
@@ -213,7 +231,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
     apiLogger.logError(requestId!, error as Error, { duration });
     apiLogger.logResponse(requestId!, 500, duration, 'Internal server error');
@@ -239,11 +256,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  */
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  let requestId: string;
+  const requestId = apiLogger.logRequest(request);
 
   try {
-    // Log request start
-    requestId = apiLogger.logRequest(request);
 
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'PUT');
@@ -325,7 +340,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     );
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
     apiLogger.logError(requestId!, error as Error, { duration });
     apiLogger.logResponse(requestId!, 500, duration, 'Failed to update portfolio');
@@ -354,11 +368,9 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  let requestId: string;
+  const requestId = apiLogger.logRequest(request);
 
   try {
-    // Log request start
-    requestId = apiLogger.logRequest(request);
 
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'POST');
@@ -413,7 +425,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { action, section, data } = validation.data;
+    const { action, data } = validation.data;
 
     let updatedData: PortfolioData;
     let message: string;
@@ -453,7 +465,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
     apiLogger.logError(requestId!, error as Error, { duration });
     apiLogger.logResponse(requestId!, 500, duration, 'Failed to perform action');
@@ -482,11 +493,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  let requestId: string;
+  const requestId = apiLogger.logRequest(request);
 
   try {
-    // Log request start
-    requestId = apiLogger.logRequest(request);
 
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'DELETE');
@@ -556,7 +565,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
     apiLogger.logError(requestId!, error as Error, { duration });
     apiLogger.logResponse(requestId!, 500, duration, 'Failed to delete item');
