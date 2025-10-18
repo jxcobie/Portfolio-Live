@@ -177,7 +177,7 @@ export default function AdminDashboard() {
       {/* Welcome Section */}
       <div className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-600 p-8 text-white">
         <h1 className="mb-2 text-3xl font-bold">Welcome back, Admin!</h1>
-        <p className="mb-6 text-indigo-100">Here's what's happening with your content today.</p>
+        <p className="mb-6 text-indigo-100">Here&apos;s what&apos;s happening with your content today.</p>
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="rounded-xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">

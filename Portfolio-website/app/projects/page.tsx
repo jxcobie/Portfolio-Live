@@ -565,7 +565,7 @@ export default function ProjectsPage() {
       <footer className={styles.pageFooter}>
         <div className={styles.footerContent}>
           <h2 className={styles.footerTitle}>READY TO BUILD SOMETHING AMAZING?</h2>
-          <p className={styles.footerText}>Let's transform your ideas into digital reality</p>
+          <p className={styles.footerText}>Let&apos;s transform your ideas into digital reality</p>
           <div className={styles.footerActions}>
             <Link href="/#contact" className={styles.ctaButton}>
               [INITIATE_CONTACT]

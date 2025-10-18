@@ -271,7 +271,7 @@ export default function ProjectsPage() {
           <DialogHeader>
             <DialogTitle>Delete Project</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteProject?.attributes.title}"? This action
+              Are you sure you want to delete &quot;{deleteProject?.attributes.title}&quot;? This action
               cannot be undone.
             </DialogDescription>
           </DialogHeader>
