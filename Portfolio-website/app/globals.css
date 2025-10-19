@@ -3324,3 +3324,8 @@ body:has(.projects-page) {
     display: block !important;
   }
 }
+
+/* ============================================================================
+   MOBILE RESPONSIVE STYLES
+   ============================================================================ */
+@import url('./mobile-responsive.css');

@@ -225,6 +225,55 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Affiliate Links table
+  db.run(`CREATE TABLE IF NOT EXISTS affiliate_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    original_url TEXT NOT NULL,
+    short_code TEXT UNIQUE NOT NULL,
+    category TEXT,
+    platform TEXT,
+    commission_rate DECIMAL(5,2),
+    total_clicks INTEGER DEFAULT 0,
+    unique_clicks INTEGER DEFAULT 0,
+    conversions INTEGER DEFAULT 0,
+    revenue DECIMAL(10,2) DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    expires_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Affiliate Click Tracking table
+  db.run(`CREATE TABLE IF NOT EXISTS affiliate_clicks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    link_id INTEGER NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    referrer TEXT,
+    country TEXT,
+    device_type TEXT,
+    clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    converted BOOLEAN DEFAULT 0,
+    conversion_value DECIMAL(10,2),
+    FOREIGN KEY (link_id) REFERENCES affiliate_links(id)
+  )`);
+
+  // Affiliate Performance table (daily aggregates)
+  db.run(`CREATE TABLE IF NOT EXISTS affiliate_performance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    link_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    clicks INTEGER DEFAULT 0,
+    unique_visitors INTEGER DEFAULT 0,
+    conversions INTEGER DEFAULT 0,
+    revenue DECIMAL(10,2) DEFAULT 0,
+    ctr DECIMAL(5,2),
+    FOREIGN KEY (link_id) REFERENCES affiliate_links(id),
+    UNIQUE(link_id, date)
+  )`);
+
   console.log('✅ Tables created successfully');
 
   // Insert admin user

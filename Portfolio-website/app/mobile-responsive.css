@@ -1,0 +1,996 @@
+/**
+ * MOBILE RESPONSIVE STYLES
+ * Comprehensive mobile optimization for the entire portfolio
+ *
+ * Breakpoints:
+ * - 1024px: Tablets
+ * - 768px: Mobile landscape
+ * - 480px: Mobile portrait
+ * - 360px: Small mobile devices
+ */
+
+/* ============================================================================
+   TABLET (1024px and below)
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+  /* Container adjustments */
+  .container,
+  .max-w-7xl {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 6rem 0 4rem;
+    min-height: 80vh;
+  }
+
+  .hero-content h1 {
+    font-size: 3rem;
+  }
+
+  .hero-content h2 {
+    font-size: 1.5rem;
+  }
+
+  /* About Section - Two columns */
+  .about-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  /* Skills Section - Two columns */
+  .skills-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  /* Projects Section - Two columns */
+  .projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  /* Reduce decorative elements */
+  .cyber-grid {
+    opacity: 0.15;
+  }
+
+  .floating-particles {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   MOBILE LANDSCAPE (768px and below)
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Root sizing */
+  :root {
+    font-size: 14px;
+  }
+
+  /* Container adjustments */
+  .container,
+  .max-w-7xl {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  /* Navbar - Mobile menu active */
+  .floating-navbar-fixed {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-pill.desktop-nav {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: flex;
+  }
+
+  .navbar-status-left,
+  .navbar-status-right {
+    font-size: 0.75rem;
+  }
+
+  .navbar-status-right .mono-text {
+    display: none; /* Hide time on mobile landscape */
+  }
+
+  /* Hero Section - Stack vertically */
+  .hero-section {
+    padding: 5rem 0 3rem;
+    min-height: auto;
+    text-align: center;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-content h2 {
+    font-size: 1.25rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .hero-buttons .btn,
+  .hero-buttons a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* About Section - Single column */
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .about-timeline {
+    padding: 1.5rem;
+  }
+
+  /* Skills Section - Single column */
+  .skills-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .skill-category {
+    padding: 1.5rem;
+  }
+
+  /* Hide circuit traces on mobile */
+  .circuit-trace,
+  svg[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  /* Projects Section - Single column */
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .project-card {
+    padding: 1.5rem;
+  }
+
+  .project-image {
+    height: 200px;
+  }
+
+  /* Contact Section - Single column form */
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .contact-form {
+    padding: 2rem 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-row .form-group {
+    margin-bottom: 0;
+  }
+
+  /* Footer */
+  .footer-content {
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+  }
+
+  /* Admin Panel */
+  .admin-sidebar {
+    width: 100%;
+    position: fixed;
+    left: -100%;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  .admin-sidebar.open {
+    left: 0;
+  }
+
+  .admin-content {
+    margin-left: 0;
+    padding: 1.5rem;
+  }
+
+  /* Tables - Responsive scroll */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* Cards */
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modals */
+  .modal-content,
+  .dialog-content {
+    max-width: 95vw;
+    margin: 1rem;
+  }
+
+  /* Hide decorative backgrounds */
+  .background-pattern,
+  .cyber-lines,
+  .grid-overlay {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   MOBILE PORTRAIT (480px and below)
+   ============================================================================ */
+
+@media (max-width: 480px) {
+  /* Root sizing */
+  :root {
+    font-size: 13px;
+  }
+
+  /* Container adjustments */
+  .container,
+  .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Section spacing */
+  section {
+    padding: 3rem 0;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+
+  /* Navbar - Compact mobile */
+  .floating-navbar-fixed {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .navbar-status-left .system-indicator {
+    font-size: 0.65rem;
+  }
+
+  .navbar-status-right {
+    display: none; /* Hide right side completely on small mobile */
+  }
+
+  .mobile-menu-button {
+    padding: 0.5rem;
+  }
+
+  /* Mobile menu overlay */
+  .mobile-nav-overlay {
+    width: 100%;
+  }
+
+  .mobile-nav-content {
+    padding: 2rem 1rem;
+  }
+
+  .mobile-nav-content .nav-item {
+    padding: 1rem;
+    font-size: 1.25rem;
+  }
+
+  /* Hero Section */
+  .hero-section {
+    padding: 4rem 0 2rem;
+  }
+
+  .hero-content h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-content h2 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .hero-description {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.75rem;
+  }
+
+  /* Buttons */
+  .btn,
+  button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    min-height: 44px; /* Touch target */
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    min-height: 38px;
+  }
+
+  /* About Section */
+  .about-card {
+    padding: 1.25rem;
+  }
+
+  .about-timeline-item {
+    padding: 1rem;
+  }
+
+  .timeline-year {
+    font-size: 2rem;
+  }
+
+  /* Skills Section */
+  .skill-card {
+    padding: 1.25rem;
+  }
+
+  .skill-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .skill-name {
+    font-size: 0.9rem;
+  }
+
+  .skill-level {
+    font-size: 0.75rem;
+  }
+
+  .progress-bar {
+    height: 4px;
+  }
+
+  /* Projects Section */
+  .project-card {
+    padding: 1.25rem;
+  }
+
+  .project-image {
+    height: 180px;
+  }
+
+  .project-title {
+    font-size: 1.25rem;
+  }
+
+  .project-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .project-tags {
+    gap: 0.5rem;
+  }
+
+  .project-tag {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .project-links {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .project-links a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Contact Section */
+  .contact-form {
+    padding: 1.5rem 1rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    padding: 0.75rem;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+
+  .form-textarea {
+    min-height: 120px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .submit-button {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  /* Footer */
+  .footer-links {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .footer-link {
+    font-size: 0.9rem;
+  }
+
+  .social-links {
+    gap: 1.5rem;
+  }
+
+  .social-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Admin Panel */
+  .admin-header {
+    padding: 1rem;
+  }
+
+  .admin-title {
+    font-size: 1.25rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+  }
+
+  /* Tables */
+  .table-wrapper {
+    font-size: 0.85rem;
+  }
+
+  .table-cell {
+    padding: 0.5rem;
+  }
+
+  /* Forms */
+  .input-group {
+    flex-direction: column;
+  }
+
+  .input-addon {
+    width: 100%;
+    border-radius: 0.25rem 0.25rem 0 0;
+  }
+
+  .input-addon + input {
+    border-radius: 0 0 0.25rem 0.25rem;
+  }
+
+  /* Badges */
+  .badge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  /* Avatars */
+  .avatar-lg {
+    width: 60px;
+    height: 60px;
+  }
+
+  .avatar-md {
+    width: 40px;
+    height: 40px;
+  }
+
+  .avatar-sm {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* ============================================================================
+   SMALL MOBILE (360px and below)
+   ============================================================================ */
+
+@media (max-width: 360px) {
+  /* Extra compact for very small devices */
+  :root {
+    font-size: 12px;
+  }
+
+  .container,
+  .max-w-7xl {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
+
+  /* Navbar */
+  .navbar-status-left .mono-text {
+    font-size: 0.6rem;
+  }
+
+  .indicator-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Hero */
+  .hero-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero-content h2 {
+    font-size: 0.9rem;
+  }
+
+  /* Buttons - Ensure touch targets */
+  .btn,
+  button {
+    padding: 0.875rem 1rem;
+    min-height: 48px;
+  }
+
+  /* Cards */
+  .card,
+  .project-card,
+  .skill-card,
+  .about-card {
+    padding: 1rem;
+  }
+
+  /* Project images */
+  .project-image {
+    height: 160px;
+  }
+
+  /* Forms */
+  .form-input,
+  .form-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Spacing */
+  section {
+    padding: 2rem 0;
+  }
+
+  .section-header {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Modal */
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .modal-header {
+    font-size: 1.125rem;
+  }
+}
+
+/* ============================================================================
+   TOUCH DEVICES - Remove hover effects, optimize for touch
+   ============================================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects */
+  .btn:hover,
+  .card:hover,
+  .project-card:hover,
+  .skill-card:hover,
+  .nav-item:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+
+  /* Increase touch targets */
+  a,
+  button,
+  .btn,
+  .nav-item,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Active states instead of hover */
+  .btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  .card:active,
+  .project-card:active {
+    transform: scale(0.99);
+  }
+
+  /* Remove hover animations */
+  .hover-lift:hover {
+    transform: none;
+  }
+
+  .hover-glow:hover {
+    box-shadow: inherit;
+  }
+
+  /* Touch-friendly spacing */
+  .nav-item {
+    padding: 1rem 1.5rem;
+  }
+
+  .mobile-nav-content .nav-item {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+  }
+
+  /* Larger icons for touch */
+  .icon-button {
+    padding: 0.75rem;
+  }
+
+  .icon-button svg,
+  .icon-button .icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Better form controls */
+  .form-checkbox,
+  .form-radio {
+    width: 24px;
+    height: 24px;
+  }
+
+  .form-switch {
+    width: 52px;
+    height: 28px;
+  }
+
+  /* Sticky elements offset for mobile keyboards */
+  .sticky-footer {
+    position: relative;
+    bottom: auto;
+  }
+
+  /* Remove complex animations on touch devices */
+  .parallax,
+  .complex-animation {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Optimize scroll performance */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* ============================================================================
+   LANDSCAPE ORIENTATION - Optimize for landscape mobile
+   ============================================================================ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Reduce vertical spacing */
+  section {
+    padding: 2rem 0;
+  }
+
+  .hero-section {
+    padding: 2rem 0;
+    min-height: auto;
+  }
+
+  /* Navbar compact */
+  .floating-navbar-fixed {
+    padding: 0.5rem 1rem;
+  }
+
+  /* Hide decorative elements */
+  .hero-particles,
+  .background-animation,
+  .floating-shapes {
+    display: none;
+  }
+
+  /* Compact mobile menu */
+  .mobile-nav-overlay {
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .mobile-nav-content .nav-item {
+    padding: 0.75rem 1.5rem;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 1.5rem 0;
+  }
+}
+
+/* ============================================================================
+   REDUCED MOTION - Accessibility
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .parallax,
+  .scroll-animation,
+  .fade-in,
+  .slide-in {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .loading-spinner,
+  .rotating-icon {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   HIGH CONTRAST MODE - Accessibility
+   ============================================================================ */
+
+@media (prefers-contrast: high) {
+  .card,
+  .project-card,
+  .skill-card {
+    border: 2px solid currentColor;
+  }
+
+  .btn {
+    border: 2px solid currentColor;
+  }
+
+  .nav-item.active {
+    border: 2px solid #00ff88;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT - System preference
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  /* Already handled by main theme, but can add mobile-specific adjustments */
+  .mobile-nav-overlay {
+    background: rgba(10, 10, 15, 0.98);
+  }
+
+  .mobile-nav-content {
+    background: #0a0a0f;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES - Mobile print optimization
+   ============================================================================ */
+
+@media print {
+  /* Hide interactive elements */
+  .navbar,
+  .floating-navbar-fixed,
+  .mobile-menu-button,
+  .btn,
+  button,
+  .footer,
+  .contact-form {
+    display: none !important;
+  }
+
+  /* Optimize for print */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  section {
+    page-break-inside: avoid;
+  }
+
+  /* Show URLs for links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES - Mobile-specific helpers
+   ============================================================================ */
+
+/* Show/Hide on mobile */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Responsive text alignment */
+@media (max-width: 768px) {
+  .text-center-mobile {
+    text-align: center;
+  }
+
+  .text-left-mobile {
+    text-align: left;
+  }
+}
+
+/* Responsive spacing */
+@media (max-width: 768px) {
+  .p-mobile-sm {
+    padding: 0.5rem;
+  }
+
+  .p-mobile-md {
+    padding: 1rem;
+  }
+
+  .p-mobile-lg {
+    padding: 1.5rem;
+  }
+
+  .m-mobile-sm {
+    margin: 0.5rem;
+  }
+
+  .m-mobile-md {
+    margin: 1rem;
+  }
+
+  .m-mobile-lg {
+    margin: 1.5rem;
+  }
+}
+
+/* Responsive flex direction */
+@media (max-width: 768px) {
+  .flex-col-mobile {
+    flex-direction: column;
+  }
+
+  .flex-row-mobile {
+    flex-direction: row;
+  }
+}
+
+/* Full width on mobile */
+@media (max-width: 768px) {
+  .w-full-mobile {
+    width: 100% !important;
+  }
+}
+
+/* ============================================================================
+   SAFE AREA SUPPORT - Notch/Safe area insets for modern devices
+   ============================================================================ */
+
+@supports (padding: max(0px)) {
+  .floating-navbar-fixed {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .container,
+  .max-w-7xl {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .mobile-nav-overlay {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .footer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}

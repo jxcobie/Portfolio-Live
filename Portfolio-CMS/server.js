@@ -7,9 +7,13 @@ const sqlite3 = require('sqlite3').verbose();
 const multer = require('multer');
 const fs = require('fs').promises;
 const bcrypt = require('bcryptjs');
+const EventEmitter = require('events');
 
 const app = express();
 const PORT = process.env.CMS_PORT || 1337;
+
+// Real-time analytics event emitter
+const analyticsEmitter = new EventEmitter();
 
 // ==================== DATABASE SETUP ====================
 const db = new sqlite3.Database('./cms_database.db');
@@ -992,6 +996,716 @@ app.get('/api/analytics', requireAuth, (req, res) => {
       },
       recentEvents: events.slice(0, 100),
     });
+  });
+});
+
+// ==================== AFFILIATE LINKS ROUTES ====================
+
+// Middleware to require API key (optional - you can use requireAuth instead)
+const requireApiKey = (req, res, next) => {
+  // For now, use the same auth as admin. You can implement API key auth later
+  return requireAuth(req, res, next);
+};
+
+// Get all affiliate links (admin)
+app.get('/api/affiliate/links', requireApiKey, async (req, res) => {
+  const { category, platform, active } = req.query;
+
+  let query = 'SELECT * FROM affiliate_links WHERE 1=1';
+  const params = [];
+
+  if (category) {
+    query += ' AND category = ?';
+    params.push(category);
+  }
+
+  if (platform) {
+    query += ' AND platform = ?';
+    params.push(platform);
+  }
+
+  if (active !== undefined) {
+    query += ' AND is_active = ?';
+    params.push(active === 'true' ? 1 : 0);
+  }
+
+  query += ' ORDER BY created_at DESC';
+
+  db.all(query, params, (err, links) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.json({
+      success: true,
+      data: links,
+      meta: {
+        total: links.length,
+      },
+    });
+  });
+});
+
+// Get single affiliate link (admin)
+app.get('/api/affiliate/links/:id', requireApiKey, async (req, res) => {
+  const { id } = req.params;
+
+  db.get('SELECT * FROM affiliate_links WHERE id = ?', [id], (err, link) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (!link) {
+      return res.status(404).json({ error: 'Affiliate link not found' });
+    }
+
+    res.json({
+      success: true,
+      data: link,
+    });
+  });
+});
+
+// Create new affiliate link (admin)
+app.post('/api/affiliate/links', requireApiKey, async (req, res) => {
+  const {
+    name,
+    description,
+    original_url,
+    short_code,
+    category,
+    platform,
+    commission_rate,
+    expires_at,
+  } = req.body;
+
+  if (!name || !original_url || !short_code) {
+    return res.status(400).json({
+      error: 'Name, original_url, and short_code are required',
+    });
+  }
+
+  const query = `
+    INSERT INTO affiliate_links (
+      name, description, original_url, short_code, category,
+      platform, commission_rate, expires_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.run(
+    query,
+    [name, description, original_url, short_code, category, platform, commission_rate, expires_at],
+    function (err) {
+      if (err) {
+        console.error('Database error:', err);
+        if (err.message.includes('UNIQUE constraint failed')) {
+          return res.status(400).json({
+            error: 'Short code already exists',
+          });
+        }
+        return res.status(500).json({ error: 'Failed to create affiliate link' });
+      }
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id: this.lastID,
+          name,
+          short_code,
+        },
+        message: 'Affiliate link created successfully',
+      });
+    }
+  );
+});
+
+// Update affiliate link (admin)
+app.put('/api/affiliate/links/:id', requireApiKey, async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    description,
+    original_url,
+    short_code,
+    category,
+    platform,
+    commission_rate,
+    is_active,
+    expires_at,
+  } = req.body;
+
+  const query = `
+    UPDATE affiliate_links SET
+      name = ?, description = ?, original_url = ?, short_code = ?,
+      category = ?, platform = ?, commission_rate = ?, is_active = ?,
+      expires_at = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `;
+
+  db.run(
+    query,
+    [
+      name,
+      description,
+      original_url,
+      short_code,
+      category,
+      platform,
+      commission_rate,
+      is_active,
+      expires_at,
+      id,
+    ],
+    function (err) {
+      if (err) {
+        console.error('Database error:', err);
+        if (err.message.includes('UNIQUE constraint failed')) {
+          return res.status(400).json({
+            error: 'Short code already exists',
+          });
+        }
+        return res.status(500).json({ error: 'Failed to update affiliate link' });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Affiliate link not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Affiliate link updated successfully',
+      });
+    }
+  );
+});
+
+// Delete affiliate link (admin)
+app.delete('/api/affiliate/links/:id', requireApiKey, async (req, res) => {
+  const { id } = req.params;
+
+  // First delete associated clicks and performance data
+  db.run('DELETE FROM affiliate_clicks WHERE link_id = ?', [id], (err) => {
+    if (err) {
+      console.error('Error deleting clicks:', err);
+    }
+
+    db.run('DELETE FROM affiliate_performance WHERE link_id = ?', [id], (err) => {
+      if (err) {
+        console.error('Error deleting performance data:', err);
+      }
+
+      // Now delete the link itself
+      db.run('DELETE FROM affiliate_links WHERE id = ?', [id], function (err) {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ error: 'Failed to delete affiliate link' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Affiliate link not found' });
+        }
+
+        res.json({
+          success: true,
+          message: 'Affiliate link deleted successfully',
+        });
+      });
+    });
+  });
+});
+
+// Public redirect endpoint with click tracking
+app.get('/go/:shortCode', async (req, res) => {
+  const { shortCode } = req.params;
+  const ipAddress = req.ip;
+  const userAgent = req.get('user-agent');
+  const referrer = req.get('referer') || req.get('referrer') || 'direct';
+
+  // Get the affiliate link
+  db.get(
+    'SELECT * FROM affiliate_links WHERE short_code = ? AND is_active = 1',
+    [shortCode],
+    (err, link) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).send('Internal server error');
+      }
+
+      if (!link) {
+        return res.status(404).send('Link not found');
+      }
+
+      // Check if link has expired
+      if (link.expires_at && new Date(link.expires_at) < new Date()) {
+        return res.status(410).send('Link has expired');
+      }
+
+      // Detect device type from user agent
+      const deviceType = /mobile/i.test(userAgent)
+        ? 'mobile'
+        : /tablet/i.test(userAgent)
+          ? 'tablet'
+          : 'desktop';
+
+      // Track the click
+      const clickQuery = `
+        INSERT INTO affiliate_clicks (
+          link_id, ip_address, user_agent, referrer, device_type
+        ) VALUES (?, ?, ?, ?, ?)
+      `;
+
+      db.run(clickQuery, [link.id, ipAddress, userAgent, referrer, deviceType], function (err) {
+        if (err) {
+          console.error('Error tracking click:', err);
+        }
+
+        // Update total clicks count
+        db.run(
+          'UPDATE affiliate_links SET total_clicks = total_clicks + 1 WHERE id = ?',
+          [link.id],
+          (err) => {
+            if (err) {
+              console.error('Error updating click count:', err);
+            }
+          }
+        );
+
+        // Update daily performance
+        const today = new Date().toISOString().split('T')[0];
+        db.run(
+          `INSERT INTO affiliate_performance (link_id, date, clicks)
+           VALUES (?, ?, 1)
+           ON CONFLICT(link_id, date) DO UPDATE SET clicks = clicks + 1`,
+          [link.id, today],
+          (err) => {
+            if (err) {
+              console.error('Error updating performance:', err);
+            }
+          }
+        );
+
+        // Emit real-time event
+        analyticsEmitter.emit('click', {
+          linkId: link.id,
+          linkName: link.name,
+          shortCode: link.short_code,
+          timestamp: new Date(),
+          deviceType,
+          ip: ipAddress.substring(0, 10) + '...', // Anonymize IP
+        });
+      });
+
+      // Redirect to the original URL
+      res.redirect(302, link.original_url);
+    }
+  );
+});
+
+// Get affiliate analytics (admin)
+app.get('/api/affiliate/analytics', requireApiKey, async (req, res) => {
+  const { timeframe = '7d', link_id } = req.query;
+
+  // Calculate date range
+  const now = new Date();
+  let startDate = new Date();
+
+  switch (timeframe) {
+    case '1d':
+      startDate.setDate(now.getDate() - 1);
+      break;
+    case '7d':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case '30d':
+      startDate.setDate(now.getDate() - 30);
+      break;
+    case '90d':
+      startDate.setDate(now.getDate() - 90);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 7);
+  }
+
+  const dateFilter = startDate.toISOString().split('T')[0];
+
+  // Get performance data
+  let performanceQuery = `
+    SELECT
+      ap.*,
+      al.name as link_name,
+      al.short_code
+    FROM affiliate_performance ap
+    JOIN affiliate_links al ON ap.link_id = al.id
+    WHERE ap.date >= ?
+  `;
+
+  const params = [dateFilter];
+
+  if (link_id) {
+    performanceQuery += ' AND ap.link_id = ?';
+    params.push(link_id);
+  }
+
+  performanceQuery += ' ORDER BY ap.date DESC';
+
+  db.all(performanceQuery, params, (err, performance) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Get summary statistics
+    const summaryQuery = link_id
+      ? 'SELECT * FROM affiliate_links WHERE id = ?'
+      : 'SELECT * FROM affiliate_links';
+
+    const summaryParams = link_id ? [link_id] : [];
+
+    db.all(summaryQuery, summaryParams, (err, links) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const summary = {
+        totalClicks: links.reduce((sum, link) => sum + (link.total_clicks || 0), 0),
+        totalConversions: links.reduce((sum, link) => sum + (link.conversions || 0), 0),
+        totalRevenue: links.reduce((sum, link) => sum + (parseFloat(link.revenue) || 0), 0),
+        activeLinks: links.filter((link) => link.is_active).length,
+        totalLinks: links.length,
+      };
+
+      res.json({
+        success: true,
+        timeframe,
+        summary,
+        performance,
+        links,
+      });
+    });
+  });
+});
+
+// Get click details for a specific link (admin)
+app.get('/api/affiliate/links/:id/clicks', requireApiKey, async (req, res) => {
+  const { id } = req.params;
+  const { limit = 100, offset = 0 } = req.query;
+
+  const query = `
+    SELECT * FROM affiliate_clicks
+    WHERE link_id = ?
+    ORDER BY clicked_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  db.all(query, [id, parseInt(limit), parseInt(offset)], (err, clicks) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Get total count
+    db.get('SELECT COUNT(*) as total FROM affiliate_clicks WHERE link_id = ?', [id], (err, row) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      res.json({
+        success: true,
+        data: clicks,
+        meta: {
+          total: row.total,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+        },
+      });
+    });
+  });
+});
+
+// Record conversion (can be called from client or webhook)
+app.post('/api/affiliate/conversion', async (req, res) => {
+  const { link_id, click_id, conversion_value } = req.body;
+
+  if (!link_id) {
+    return res.status(400).json({ error: 'link_id is required' });
+  }
+
+  // Update click record if click_id provided
+  if (click_id) {
+    db.run(
+      'UPDATE affiliate_clicks SET converted = 1, conversion_value = ? WHERE id = ?',
+      [conversion_value || 0, click_id],
+      (err) => {
+        if (err) {
+          console.error('Error updating click:', err);
+        }
+      }
+    );
+  }
+
+  // Update link totals
+  db.run(
+    `UPDATE affiliate_links SET
+      conversions = conversions + 1,
+      revenue = revenue + ?
+     WHERE id = ?`,
+    [conversion_value || 0, link_id],
+    (err) => {
+      if (err) {
+        console.error('Error updating link:', err);
+        return res.status(500).json({ error: 'Failed to record conversion' });
+      }
+
+      // Update daily performance
+      const today = new Date().toISOString().split('T')[0];
+      db.run(
+        `INSERT INTO affiliate_performance (link_id, date, conversions, revenue)
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(link_id, date) DO UPDATE SET
+           conversions = conversions + 1,
+           revenue = revenue + ?`,
+        [link_id, today, conversion_value || 0, conversion_value || 0],
+        (err) => {
+          if (err) {
+            console.error('Error updating performance:', err);
+          }
+        }
+      );
+
+      // Emit real-time event
+      analyticsEmitter.emit('conversion', {
+        linkId: link_id,
+        value: conversion_value || 0,
+        timestamp: new Date(),
+      });
+
+      res.json({
+        success: true,
+        message: 'Conversion recorded successfully',
+      });
+    }
+  );
+});
+
+// Get comprehensive dashboard analytics
+app.get('/api/affiliate/dashboard', requireApiKey, (req, res) => {
+  const { period = '7d' } = req.query; // 7d, 30d, 90d, all
+
+  let dateFilter = '';
+  if (period !== 'all') {
+    const days = parseInt(period);
+    dateFilter = `AND ac.clicked_at >= datetime('now', '-${days} days')`;
+  }
+
+  // Get overall stats
+  const overallQuery = `
+    SELECT
+      COUNT(DISTINCT al.id) as total_links,
+      SUM(al.total_clicks) as total_clicks,
+      SUM(al.unique_clicks) as unique_clicks,
+      SUM(al.conversions) as total_conversions,
+      SUM(al.revenue) as total_revenue,
+      ROUND(AVG((CAST(al.conversions AS FLOAT) / NULLIF(al.total_clicks, 0)) * 100), 2) as avg_conversion_rate,
+      ROUND(AVG((CAST(al.unique_clicks AS FLOAT) / NULLIF(al.total_clicks, 0)) * 100), 2) as avg_unique_rate
+    FROM affiliate_links al
+    WHERE al.is_active = 1
+  `;
+
+  // Get top performing links
+  const topLinksQuery = `
+    SELECT
+      al.id,
+      al.name,
+      al.short_code,
+      al.category,
+      al.total_clicks,
+      al.unique_clicks,
+      al.conversions,
+      al.revenue,
+      ROUND((CAST(al.conversions AS FLOAT) / NULLIF(al.total_clicks, 0)) * 100, 2) as conversion_rate,
+      ROUND((CAST(al.unique_clicks AS FLOAT) / NULLIF(al.total_clicks, 0)) * 100, 2) as ctr
+    FROM affiliate_links al
+    WHERE al.is_active = 1
+    ORDER BY al.total_clicks DESC
+    LIMIT 10
+  `;
+
+  // Get clicks over time
+  const clicksTimelineQuery = `
+    SELECT
+      DATE(ac.clicked_at) as date,
+      COUNT(*) as clicks,
+      COUNT(DISTINCT ac.ip_address) as unique_visitors
+    FROM affiliate_clicks ac
+    WHERE 1=1 ${dateFilter}
+    GROUP BY DATE(ac.clicked_at)
+    ORDER BY date DESC
+  `;
+
+  // Get device breakdown
+  const deviceBreakdownQuery = `
+    SELECT
+      ac.device_type,
+      COUNT(*) as clicks,
+      ROUND((CAST(COUNT(*) AS FLOAT) / (SELECT COUNT(*) FROM affiliate_clicks WHERE 1=1 ${dateFilter})) * 100, 2) as percentage
+    FROM affiliate_clicks ac
+    WHERE 1=1 ${dateFilter}
+    GROUP BY ac.device_type
+  `;
+
+  // Get category performance
+  const categoryPerformanceQuery = `
+    SELECT
+      al.category,
+      COUNT(DISTINCT al.id) as link_count,
+      SUM(al.total_clicks) as total_clicks,
+      SUM(al.conversions) as conversions,
+      SUM(al.revenue) as revenue,
+      ROUND((CAST(SUM(al.conversions) AS FLOAT) / NULLIF(SUM(al.total_clicks), 0)) * 100, 2) as conversion_rate
+    FROM affiliate_links al
+    WHERE al.is_active = 1 AND al.category IS NOT NULL
+    GROUP BY al.category
+    ORDER BY total_clicks DESC
+  `;
+
+  // Execute all queries
+  const results = {};
+
+  db.get(overallQuery, (err, overall) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    results.overall = overall;
+
+    db.all(topLinksQuery, (err, topLinks) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      results.topLinks = topLinks;
+
+      db.all(clicksTimelineQuery, (err, timeline) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        results.timeline = timeline;
+
+        db.all(deviceBreakdownQuery, (err, devices) => {
+          if (err) return res.status(500).json({ error: 'Database error' });
+          results.deviceBreakdown = devices;
+
+          db.all(categoryPerformanceQuery, (err, categories) => {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            results.categoryPerformance = categories;
+
+            // Calculate additional metrics
+            results.overall.ctr = results.overall.total_clicks > 0
+              ? ((results.overall.unique_clicks / results.overall.total_clicks) * 100).toFixed(2)
+              : 0;
+
+            res.json(results);
+          });
+        });
+      });
+    });
+  });
+});
+
+// Real-time analytics stream (SSE)
+app.get('/api/affiliate/stream', requireApiKey, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Send initial data
+  res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date() })}\n\n`);
+
+  // Listen for click events
+  const clickHandler = (data) => {
+    res.write(`data: ${JSON.stringify({ type: 'click', ...data })}\n\n`);
+  };
+
+  const conversionHandler = (data) => {
+    res.write(`data: ${JSON.stringify({ type: 'conversion', ...data })}\n\n`);
+  };
+
+  analyticsEmitter.on('click', clickHandler);
+  analyticsEmitter.on('conversion', conversionHandler);
+
+  // Send heartbeat every 30 seconds
+  const heartbeat = setInterval(() => {
+    res.write(`data: ${JSON.stringify({ type: 'heartbeat', timestamp: new Date() })}\n\n`);
+  }, 30000);
+
+  // Cleanup on close
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    analyticsEmitter.off('click', clickHandler);
+    analyticsEmitter.off('conversion', conversionHandler);
+  });
+});
+
+// Export analytics data as CSV
+app.get('/api/affiliate/export', requireApiKey, (req, res) => {
+  const { type = 'links', startDate, endDate } = req.query;
+
+  let query = '';
+
+  if (type === 'links') {
+    query = `
+      SELECT
+        al.id,
+        al.name,
+        al.short_code,
+        al.original_url,
+        al.category,
+        al.platform,
+        al.total_clicks,
+        al.unique_clicks,
+        al.conversions,
+        al.revenue,
+        al.created_at
+      FROM affiliate_links al
+      ORDER BY al.total_clicks DESC
+    `;
+  } else if (type === 'clicks') {
+    query = `
+      SELECT
+        al.name as link_name,
+        al.short_code,
+        ac.ip_address,
+        ac.user_agent,
+        ac.referrer,
+        ac.device_type,
+        ac.clicked_at,
+        ac.converted
+      FROM affiliate_clicks ac
+      JOIN affiliate_links al ON ac.link_id = al.id
+      WHERE 1=1
+    `;
+
+    if (startDate) query += ` AND ac.clicked_at >= '${startDate}'`;
+    if (endDate) query += ` AND ac.clicked_at <= '${endDate}'`;
+
+    query += ' ORDER BY ac.clicked_at DESC';
+  }
+
+  db.all(query, (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No data found' });
+    }
+
+    // Convert to CSV
+    const headers = Object.keys(rows[0]).join(',');
+    const csv = [
+      headers,
+      ...rows.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="affiliate-${type}-${Date.now()}.csv"`);
+    res.send(csv);
   });
 });
 

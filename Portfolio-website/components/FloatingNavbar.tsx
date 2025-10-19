@@ -8,47 +8,25 @@ import { useNavbar } from '../context/NavbarContext';
 // TYPES & INTERFACES
 // ============================================================================
 
-/**
- * Navigation item configuration
- */
 export interface NavItem {
   id: string;
   label: string;
   ariaLabel?: string;
 }
 
-/**
- * FloatingNavbar component props
- */
 export interface FloatingNavbarProps {
-  /** Array of navigation items to display */
   navItems?: NavItem[];
-  /** Custom time zone for the clock (default: Asia/Kuala_Lumpur) */
   timeZone?: string;
-  /** Location label for the clock */
   locationLabel?: string;
-  /** Enable/disable mobile hamburger menu */
   enableMobileMenu?: boolean;
-  /** Callback when navigation item is clicked */
   onNavigate?: (sectionId: string) => void;
-  /** Custom class name for additional styling */
   className?: string;
-}
-
-/**
- * Intersection Observer hook return type
- */
-interface UseActiveSection {
-  activeSection: string;
 }
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-/**
- * Default navigation items - exported for reuse across the application
- */
 export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'HOME', ariaLabel: 'Navigate to home section' },
   { id: 'about', label: 'ABOUT', ariaLabel: 'Navigate to about section' },
@@ -57,82 +35,118 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'contact', label: 'CONTACT', ariaLabel: 'Navigate to contact section' },
 ];
 
-const INTERSECTION_THRESHOLD = 0.5;
-const TIME_UPDATE_INTERVAL = 1000; // 1 second
+const TIME_UPDATE_INTERVAL = 1000;
+const SCROLL_DEBOUNCE = 100; // ms to wait before updating active section
 
 // ============================================================================
 // CUSTOM HOOKS
 // ============================================================================
 
 /**
- * Custom hook for active section detection using Intersection Observer
- * @param navItems - Array of navigation items to observe
- * @returns Currently active section ID
+ * Simple scroll-based active section detection
+ * Much more reliable than IntersectionObserver
  */
-function useActiveSection(navItems: NavItem[]): UseActiveSection {
-  const [activeSection, setActiveSection] = useState<string>(navItems[0]?.id || 'home');
+function useScrollActiveSection(navItems: NavItem[]) {
+  const [activeSection, setActiveSection] = useState<string>('home');
+  const isScrollingProgrammatically = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Add scroll listener to detect when at top of page
-    const handleScroll = () => {
-      if (window.scrollY < 100) {
-        setActiveSection('home');
+    const getActiveSection = (): string => {
+      // Don't update during programmatic scrolls
+      if (isScrollingProgrammatically.current) {
+        return activeSection;
       }
+
+      const scrollPosition = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // If at the very top, always show home
+      if (scrollPosition < windowHeight * 0.3) {
+        return 'home';
+      }
+
+      // Get all section positions
+      const sectionPositions = navItems
+        .map((item) => {
+          const element = document.getElementById(item.id);
+          if (!element) return null;
+
+          const rect = element.getBoundingClientRect();
+          const elementTop = rect.top + window.scrollY;
+          const elementBottom = elementTop + rect.height;
+
+          return {
+            id: item.id,
+            top: elementTop,
+            bottom: elementBottom,
+            middle: elementTop + rect.height / 2,
+          };
+        })
+        .filter((section): section is NonNullable<typeof section> => section !== null);
+
+      // Find which section we're currently in
+      // A section is "active" if we're past its top minus an offset
+      const navbarHeight = 100; // approximate navbar height
+      const currentScroll = scrollPosition + navbarHeight + 100; // offset for better UX
+
+      // Find the section we're currently in or have passed
+      let currentSection = 'home';
+
+      for (let i = sectionPositions.length - 1; i >= 0; i--) {
+        const section = sectionPositions[i];
+        if (currentScroll >= section.top) {
+          currentSection = section.id;
+          break;
+        }
+      }
+
+      return currentSection;
     };
 
+    const handleScroll = () => {
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      // Debounce the update
+      scrollTimeoutRef.current = setTimeout(() => {
+        const newActiveSection = getActiveSection();
+        setActiveSection(newActiveSection);
+      }, SCROLL_DEBOUNCE);
+    };
+
+    // Initial check
+    handleScroll();
+
+    // Listen to scroll events
     window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Create intersection observer to detect which section is in view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Skip if we're at the top of the page
-        if (window.scrollY < 100) {
-          return;
-        }
-
-        // Find the entry with the highest intersection ratio
-        let maxRatio = 0;
-        let maxEntry: IntersectionObserverEntry | null = null;
-
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
-            maxRatio = entry.intersectionRatio;
-            maxEntry = entry;
-          }
-        });
-
-        // Update active section if we found an intersecting entry
-        if (maxEntry && maxEntry.intersectionRatio >= INTERSECTION_THRESHOLD) {
-          setActiveSection(maxEntry.target.id);
-        }
-      },
-      {
-        threshold: [0, 0.25, 0.5, 0.75, 1.0], // Multiple thresholds for better detection
-        rootMargin: '-10% 0px -40% 0px', // Detect section when it's near the top
-      }
-    );
-
-    // Observe all navigation sections
-    navItems.forEach((item) => {
-      const element = document.getElementById(item.id);
-      if (element) {
-        observer.observe(element);
-      }
-    });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
-  }, [navItems]);
+  }, [navItems, activeSection]);
 
-  return { activeSection };
+  // Function to manually set active section (for click navigation)
+  const setActiveSectionManually = useCallback((sectionId: string) => {
+    setActiveSection(sectionId);
+    isScrollingProgrammatically.current = true;
+
+    // Re-enable automatic detection after scroll completes
+    setTimeout(() => {
+      isScrollingProgrammatically.current = false;
+    }, 1000);
+  }, []);
+
+  return { activeSection, setActiveSectionManually };
 }
 
 /**
- * Custom hook for keyboard navigation support
- * @param navItems - Array of navigation items
- * @param scrollToSection - Function to scroll to a section
+ * Keyboard navigation support
  */
 function useKeyboardNavigation(navItems: NavItem[], scrollToSection: (sectionId: string) => void) {
   const navRef = useRef<HTMLElement>(null);
@@ -197,9 +211,6 @@ function useKeyboardNavigation(navItems: NavItem[], scrollToSection: (sectionId:
 // SUB-COMPONENTS
 // ============================================================================
 
-/**
- * Optimized Time Display Component - only re-renders when time changes
- */
 interface TimeDisplayProps {
   timeZone: string;
   locationLabel: string;
@@ -228,16 +239,13 @@ const TimeDisplay = memo<TimeDisplayProps>(({ timeZone, locationLabel }) => {
 
   return (
     <span className="mono-text" aria-live="polite" aria-atomic="true">
-      [{locationLabel} {'//'} {time} GMT+8]
+      [{locationLabel} {'//'} {time} GMT+1]
     </span>
   );
 });
 
 TimeDisplay.displayName = 'TimeDisplay';
 
-/**
- * Navigation Items Component
- */
 interface NavItemsProps {
   items: NavItem[];
   activeSection: string;
@@ -248,30 +256,29 @@ interface NavItemsProps {
 const NavItems = memo<NavItemsProps>(({ items, activeSection, onNavigate, isMobile = false }) => {
   return (
     <>
-      {items.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onNavigate(item.id)}
-          data-section-id={item.id}
-          className={`nav-item ${activeSection === item.id ? 'active' : ''} ${
-            isMobile ? 'mobile' : ''
-          }`}
-          aria-label={item.ariaLabel || `Navigate to ${item.label.toLowerCase()} section`}
-          aria-current={activeSection === item.id ? 'page' : undefined}
-          type="button"
-        >
-          <span className="nav-text">{item.label}</span>
-        </button>
-      ))}
+      {items.map((item) => {
+        const isActive = activeSection === item.id;
+
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            data-section-id={item.id}
+            className={`nav-item ${isActive ? 'active' : ''} ${isMobile ? 'mobile' : ''}`}
+            aria-label={item.ariaLabel || `Navigate to ${item.label.toLowerCase()} section`}
+            aria-current={isActive ? 'page' : undefined}
+            type="button"
+          >
+            <span className="nav-text">{item.label}</span>
+          </button>
+        );
+      })}
     </>
   );
 });
 
 NavItems.displayName = 'NavItems';
 
-/**
- * Mobile Menu Button Component
- */
 interface MobileMenuButtonProps {
   isOpen: boolean;
   onClick: () => void;
@@ -302,90 +309,57 @@ MobileMenuButton.displayName = 'MobileMenuButton';
 // MAIN COMPONENT
 // ============================================================================
 
-/**
- * FloatingNavbar Component
- *
- * A production-ready, accessible navigation bar with:
- * - Intersection Observer for active section detection
- * - Full keyboard navigation support
- * - WCAG AA compliant focus indicators
- * - Optimized rendering with React.memo
- * - Mobile responsive design with hamburger menu
- * - Configurable navigation items
- * - TypeScript type safety
- *
- * @example
- * ```tsx
- * <FloatingNavbar
- *   navItems={customNavItems}
- *   timeZone="Asia/Tokyo"
- *   locationLabel="TOKYO"
- *   onNavigate={(id) => handleNavigate(id)}
- * />
- * ```
- */
 export const FloatingNavbar = memo<FloatingNavbarProps>(
   ({
     navItems = DEFAULT_NAV_ITEMS,
-    timeZone = 'Asia/Kuala_Lumpur',
-    locationLabel = 'SEPANG',
+    timeZone = 'CET',
+    locationLabel = 'Tunis, TN',
     enableMobileMenu = true,
     onNavigate,
     className = '',
   }) => {
     const { navbarText } = useNavbar();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { activeSection } = useActiveSection(navItems);
+    const { activeSection, setActiveSectionManually } = useScrollActiveSection(navItems);
 
     /**
-     * Scroll to section with smooth behavior and fallback
+     * Scroll to section with smooth behavior
      */
     const scrollToSection = useCallback(
       (sectionId: string) => {
+        // Immediately update active section
+        setActiveSectionManually(sectionId);
+
         // Special handling for home section - scroll to top
         if (sectionId === 'home') {
-          if ('scrollBehavior' in document.documentElement.style) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          } else {
-            window.scrollTo(0, 0);
-          }
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          });
 
-          // Close mobile menu after navigation
           setIsMobileMenuOpen(false);
-
-          // Call optional callback
           onNavigate?.(sectionId);
           return;
         }
 
-        // For other sections, use scrollIntoView
+        // For other sections, scroll to element
         const element = document.getElementById(sectionId);
         if (element) {
-          // Calculate navbar height to offset scroll position
           const navbar = document.querySelector('.floating-navbar-fixed');
           const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 0;
           const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-          const offsetPosition = elementPosition - navbarHeight - 20; // 20px extra padding
+          const offsetPosition = elementPosition - navbarHeight - 20;
 
-          // Check if smooth scroll is supported
-          if ('scrollBehavior' in document.documentElement.style) {
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth',
-            });
-          } else {
-            // Fallback for browsers that don't support smooth scroll
-            window.scrollTo(0, offsetPosition);
-          }
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
 
-          // Close mobile menu after navigation
           setIsMobileMenuOpen(false);
-
-          // Call optional callback
           onNavigate?.(sectionId);
         }
       },
-      [onNavigate]
+      [onNavigate, setActiveSectionManually]
     );
 
     // Keyboard navigation hook
@@ -444,7 +418,7 @@ export const FloatingNavbar = memo<FloatingNavbarProps>(
         <div className="navbar-status-left">
           <div className="system-indicator">
             <span
-              className="indicator-dot"
+              className="indicator-dot pulse-green"
               role="status"
               aria-label="System online"
               title="System Status: Online"
@@ -510,52 +484,3 @@ export const FloatingNavbar = memo<FloatingNavbarProps>(
 );
 
 FloatingNavbar.displayName = 'FloatingNavbar';
-
-// ============================================================================
-// TESTS STRUCTURE (To be implemented)
-// ============================================================================
-
-/**
- * Unit Tests:
- *
- * describe('FloatingNavbar', () => {
- *   describe('Rendering', () => {
- *     it('should render with default props')
- *     it('should render with custom nav items')
- *     it('should display the correct time for the timezone')
- *     it('should show the navbar text from context')
- *   })
- *
- *   describe('Navigation', () => {
- *     it('should scroll to section when nav item is clicked')
- *     it('should update active section on scroll')
- *     it('should call onNavigate callback when provided')
- *   })
- *
- *   describe('Keyboard Navigation', () => {
- *     it('should navigate with arrow keys')
- *     it('should navigate to first item with Home key')
- *     it('should navigate to last item with End key')
- *     it('should handle Enter key to activate navigation')
- *   })
- *
- *   describe('Mobile Menu', () => {
- *     it('should toggle mobile menu on button click')
- *     it('should close mobile menu after navigation')
- *     it('should close mobile menu on outside click')
- *     it('should lock body scroll when menu is open')
- *   })
- *
- *   describe('Accessibility', () => {
- *     it('should have proper ARIA labels')
- *     it('should have aria-current on active section')
- *     it('should be keyboard navigable')
- *     it('should meet WCAG AA contrast requirements')
- *   })
- *
- *   describe('Intersection Observer', () => {
- *     it('should detect active section on scroll')
- *     it('should handle multiple sections in view')
- *   })
- * })
- */
