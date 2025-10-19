@@ -15,6 +15,41 @@ const PORT = process.env.CMS_PORT || 1337;
 // Real-time analytics event emitter
 const analyticsEmitter = new EventEmitter();
 
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Detect device type from user agent
+ */
+function getDeviceType(userAgent) {
+  const ua = userAgent.toLowerCase();
+  if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+    return 'tablet';
+  }
+  if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated/.test(userAgent)) {
+    return 'mobile';
+  }
+  return 'desktop';
+}
+
+/**
+ * Extract browser name from user agent
+ */
+function getBrowser(userAgent) {
+  if (userAgent.includes('Chrome')) return 'Chrome';
+  if (userAgent.includes('Firefox')) return 'Firefox';
+  if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari';
+  if (userAgent.includes('Edge')) return 'Edge';
+  if (userAgent.includes('Opera') || userAgent.includes('OPR')) return 'Opera';
+  return 'Other';
+}
+
+/**
+ * Generate random short code for link tracking
+ */
+function generateShortCode() {
+  return crypto.randomBytes(4).toString('hex');
+}
+
 // ==================== DATABASE SETUP ====================
 const db = new sqlite3.Database('./cms_database.db');
 
@@ -997,6 +1032,277 @@ app.get('/api/analytics', requireAuth, (req, res) => {
       recentEvents: events.slice(0, 100),
     });
   });
+});
+
+// ==================== CAMPAIGN & LINK TRACKING ROUTES ====================
+
+app.post('/api/campaigns', requireAuth, (req, res) => {
+  const { name, platform, comment_format, description, target_url } = req.body;
+  if (!name || !platform || !comment_format || !target_url) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  db.run(
+    'INSERT INTO campaigns (name, platform, comment_format, description, target_url) VALUES (?, ?, ?, ?, ?)',
+    [name, platform, comment_format, description, target_url],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to create campaign' });
+      db.run('INSERT INTO campaign_stats (campaign_id) VALUES (?)', [this.lastID]);
+      res.status(201).json({ success: true, campaignId: this.lastID });
+    }
+  );
+});
+
+app.get('/api/campaigns', requireAuth, (req, res) => {
+  db.all(
+    `SELECT c.*, cs.total_clicks, cs.unique_clicks, cs.ctr, cs.last_click,
+     COUNT(DISTINCT tl.id) as link_count
+     FROM campaigns c
+     LEFT JOIN campaign_stats cs ON c.id = cs.campaign_id
+     LEFT JOIN tracked_links tl ON c.id = tl.campaign_id
+     GROUP BY c.id ORDER BY c.created_at DESC`,
+    [],
+    (err, campaigns) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ data: campaigns, meta: { total: campaigns.length } });
+    }
+  );
+});
+
+app.get('/api/campaigns/:id', requireAuth, (req, res) => {
+  db.get(
+    'SELECT c.*, cs.total_clicks, cs.unique_clicks, cs.ctr FROM campaigns c LEFT JOIN campaign_stats cs ON c.id = cs.campaign_id WHERE c.id = ?',
+    [req.params.id],
+    (err, campaign) => {
+      if (err || !campaign) return res.status(404).json({ error: 'Campaign not found' });
+      db.all('SELECT * FROM tracked_links WHERE campaign_id = ?', [req.params.id], (err, links) => {
+        res.json({ campaign, links: links || [] });
+      });
+    }
+  );
+});
+
+app.put('/api/campaigns/:id', requireAuth, (req, res) => {
+  const { name, platform, comment_format, description, target_url, is_active } = req.body;
+  db.run(
+    'UPDATE campaigns SET name = COALESCE(?, name), platform = COALESCE(?, platform), comment_format = COALESCE(?, comment_format), description = COALESCE(?, description), target_url = COALESCE(?, target_url), is_active = COALESCE(?, is_active), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [name, platform, comment_format, description, target_url, is_active, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to update' });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.post('/api/campaigns/:id/links', requireAuth, (req, res) => {
+  db.get('SELECT id, target_url FROM campaigns WHERE id = ?', [req.params.id], (err, campaign) => {
+    if (err || !campaign) return res.status(404).json({ error: 'Campaign not found' });
+    const shortCode = generateShortCode();
+    db.run(
+      'INSERT INTO tracked_links (campaign_id, short_code, original_url) VALUES (?, ?, ?)',
+      [req.params.id, shortCode, campaign.target_url],
+      function (err) {
+        if (err) return res.status(400).json({ error: 'Failed to create link' });
+        res.status(201).json({
+          success: true,
+          linkId: this.lastID,
+          shortCode,
+          trackingUrl: `http://localhost:1337/l/${shortCode}`,
+        });
+      }
+    );
+  });
+});
+
+app.get('/l/:shortCode', (req, res) => {
+  const ipAddress = req.ip;
+  const userAgent = req.headers['user-agent'] || '';
+  const referrer = req.headers['referer'] || '';
+  db.get(
+    'SELECT tl.*, c.target_url, c.is_active, c.id as campaign_id FROM tracked_links tl JOIN campaigns c ON tl.campaign_id = c.id WHERE tl.short_code = ?',
+    [req.params.shortCode],
+    (err, link) => {
+      if (err || !link) return res.status(404).send('Link not found');
+      if (!link.is_active) return res.status(410).send('Campaign inactive');
+      const deviceType = getDeviceType(userAgent);
+      const browser = getBrowser(userAgent);
+      db.run(
+        'INSERT INTO link_clicks (link_id, ip_address, user_agent, referrer, device_type, browser) VALUES (?, ?, ?, ?, ?, ?)',
+        [link.id, ipAddress, userAgent, referrer, deviceType, browser]
+      );
+      db.run('UPDATE tracked_links SET total_clicks = total_clicks + 1 WHERE id = ?', [link.id]);
+      db.get(
+        "SELECT COUNT(*) as count FROM link_clicks WHERE link_id = ? AND ip_address = ? AND clicked_at > datetime('now', '-24 hours')",
+        [link.id, ipAddress],
+        (err, result) => {
+          if (!err && result && result.count === 1) {
+            db.run('UPDATE tracked_links SET unique_clicks = unique_clicks + 1 WHERE id = ?', [link.id]);
+            db.run('UPDATE campaign_stats SET total_clicks = total_clicks + 1, unique_clicks = unique_clicks + 1, last_click = CURRENT_TIMESTAMP WHERE campaign_id = ?', [link.campaign_id]);
+          } else {
+            db.run('UPDATE campaign_stats SET total_clicks = total_clicks + 1, last_click = CURRENT_TIMESTAMP WHERE campaign_id = ?', [link.campaign_id]);
+          }
+        }
+      );
+      res.redirect(link.target_url);
+    }
+  );
+});
+
+app.get('/api/campaigns/:id/analytics', requireAuth, (req, res) => {
+  const results = {};
+  let completed = 0;
+  db.all('SELECT DATE(lc.clicked_at) as date, COUNT(*) as clicks, COUNT(DISTINCT lc.ip_address) as unique_visitors FROM link_clicks lc JOIN tracked_links tl ON lc.link_id = tl.id WHERE tl.campaign_id = ? GROUP BY DATE(lc.clicked_at) ORDER BY date DESC', [req.params.id], (err, data) => {
+    results.timeline = data || [];
+    if (++completed === 3) res.json(results);
+  });
+  db.all('SELECT lc.device_type, COUNT(*) as clicks FROM link_clicks lc JOIN tracked_links tl ON lc.link_id = tl.id WHERE tl.campaign_id = ? GROUP BY lc.device_type', [req.params.id], (err, data) => {
+    results.devices = data || [];
+    if (++completed === 3) res.json(results);
+  });
+  db.all('SELECT lc.browser, COUNT(*) as clicks FROM link_clicks lc JOIN tracked_links tl ON lc.link_id = tl.id WHERE tl.campaign_id = ? GROUP BY lc.browser', [req.params.id], (err, data) => {
+    results.browsers = data || [];
+    if (++completed === 3) res.json(results);
+  });
+});
+
+app.get('/api/campaigns/compare', requireAuth, (req, res) => {
+  let query = 'SELECT c.*, cs.total_clicks, cs.unique_clicks, cs.ctr FROM campaigns c LEFT JOIN campaign_stats cs ON c.id = cs.campaign_id WHERE c.is_active = 1';
+  const params = [];
+  if (req.query.platform) {
+    query += ' AND c.platform = ?';
+    params.push(req.query.platform);
+  }
+  query += ' ORDER BY cs.total_clicks DESC';
+  db.all(query, params, (err, campaigns) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json({ platform: req.query.platform || 'all', campaigns });
+  });
+});
+
+app.delete('/api/campaigns/:id', requireAuth, (req, res) => {
+  db.run('DELETE FROM campaigns WHERE id = ?', [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete' });
+    res.json({ success: true });
+  });
+});
+
+// ==================== INCOME TRACKING ROUTES ====================
+
+app.post('/api/income', requireAuth, (req, res) => {
+  const { project_id, client_name, amount, currency, payment_method, payment_date, invoice_number, status, category, description, notes } = req.body;
+  if (!client_name || !amount) return res.status(400).json({ error: 'Client name and amount required' });
+  db.run(
+    'INSERT INTO income_records (project_id, client_name, amount, currency, payment_method, payment_date, invoice_number, status, category, description, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [project_id, client_name, amount, currency || 'USD', payment_method, payment_date, invoice_number, status || 'pending', category || 'project', description, notes],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to create record' });
+      res.status(201).json({ success: true, incomeId: this.lastID });
+    }
+  );
+});
+
+app.get('/api/income', requireAuth, (req, res) => {
+  let query = 'SELECT ir.*, p.title as project_title FROM income_records ir LEFT JOIN projects p ON ir.project_id = p.id WHERE 1=1';
+  const params = [];
+  if (req.query.status) {
+    query += ' AND ir.status = ?';
+    params.push(req.query.status);
+  }
+  if (req.query.year && req.query.month) {
+    query += " AND strftime('%Y', ir.payment_date) = ? AND strftime('%m', ir.payment_date) = ?";
+    params.push(req.query.year, String(req.query.month).padStart(2, '0'));
+  }
+  query += ' ORDER BY ir.payment_date DESC';
+  db.all(query, params, (err, records) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    const totals = {
+      total: records.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0),
+      received: records.filter(r => r.status === 'received').reduce((sum, r) => sum + parseFloat(r.amount || 0), 0),
+      pending: records.filter(r => r.status === 'pending').reduce((sum, r) => sum + parseFloat(r.amount || 0), 0),
+    };
+    res.json({ data: records, meta: { count: records.length, totals } });
+  });
+});
+
+app.get('/api/income/dashboard', requireAuth, (req, res) => {
+  const results = {};
+  let completed = 0;
+  db.all("SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM income_records WHERE strftime('%Y-%m', payment_date) = strftime('%Y-%m', 'now') AND status = 'received'", [], (err, data) => {
+    results.currentMonth = data && data[0] ? data[0] : { total: 0, count: 0 };
+    if (++completed === 5) res.json(results);
+  });
+  db.all("SELECT COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM income_records WHERE strftime('%Y', payment_date) = strftime('%Y', 'now') AND status = 'received'", [], (err, data) => {
+    results.ytd = data && data[0] ? data[0] : { total: 0, count: 0 };
+    if (++completed === 5) res.json(results);
+  });
+  db.all("SELECT category, COALESCE(SUM(amount), 0) as total, COUNT(*) as count FROM income_records WHERE status = 'received' GROUP BY category", [], (err, data) => {
+    results.byCategory = data || [];
+    if (++completed === 5) res.json(results);
+  });
+  db.all("SELECT client_name, COALESCE(SUM(amount), 0) as total, COUNT(*) as payments FROM income_records WHERE status = 'received' GROUP BY client_name ORDER BY total DESC LIMIT 10", [], (err, data) => {
+    results.topClients = data || [];
+    if (++completed === 5) res.json(results);
+  });
+  db.all("SELECT id, client_name, amount, payment_date, invoice_number FROM income_records WHERE status = 'pending' ORDER BY payment_date ASC", [], (err, data) => {
+    results.pending = data || [];
+    if (++completed === 5) res.json(results);
+  });
+});
+
+app.put('/api/income/:id', requireAuth, (req, res) => {
+  const { client_name, amount, status, payment_date, category } = req.body;
+  db.run(
+    'UPDATE income_records SET client_name = COALESCE(?, client_name), amount = COALESCE(?, amount), status = COALESCE(?, status), payment_date = COALESCE(?, payment_date), category = COALESCE(?, category), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [client_name, amount, status, payment_date, category, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to update' });
+      res.json({ success: true });
+    }
+  );
+});
+
+app.delete('/api/income/:id', requireAuth, (req, res) => {
+  db.run('DELETE FROM income_records WHERE id = ?', [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete' });
+    res.json({ success: true });
+  });
+});
+
+// ==================== ENHANCED VISITOR ANALYTICS ====================
+
+app.get('/api/analytics/dashboard', requireAuth, (req, res) => {
+  const timeframe = req.query.timeframe || '7d';
+  let days = 7;
+  if (timeframe === '1d') days = 1;
+  else if (timeframe === '30d') days = 30;
+  const results = { timeframe };
+  let completed = 0;
+  db.all("SELECT COUNT(DISTINCT session_id) as total_visitors, SUM(page_views) as total_page_views, ROUND(AVG(page_views), 2) as avg_pages_per_session, ROUND(AVG(session_duration), 2) as avg_session_duration, COUNT(DISTINCT CASE WHEN is_returning = 1 THEN session_id END) as returning_visitors FROM visitor_sessions WHERE first_visit >= datetime('now', '-" + days + " days')", [], (err, data) => {
+    results.overview = data || [];
+    if (++completed === 4) res.json(results);
+  });
+  db.all("SELECT referrer_source, COUNT(*) as visitors FROM visitor_sessions WHERE first_visit >= datetime('now', '-" + days + " days') GROUP BY referrer_source ORDER BY visitors DESC", [], (err, data) => {
+    results.sources = data || [];
+    if (++completed === 4) res.json(results);
+  });
+  db.all("SELECT device_type, COUNT(*) as visitors FROM visitor_sessions WHERE first_visit >= datetime('now', '-" + days + " days') GROUP BY device_type", [], (err, data) => {
+    results.devices = data || [];
+    if (++completed === 4) res.json(results);
+  });
+  db.all("SELECT page_url, COUNT(*) as views, ROUND(AVG(time_on_page), 2) as avg_time_on_page FROM page_views WHERE viewed_at >= datetime('now', '-" + days + " days') GROUP BY page_url ORDER BY views DESC LIMIT 10", [], (err, data) => {
+    results.pages = data || [];
+    if (++completed === 4) res.json(results);
+  });
+});
+
+app.get('/api/analytics/realtime', requireAuth, (req, res) => {
+  db.all(
+    "SELECT vs.session_id, vs.last_visit, vs.device_type, pv.page_url as current_page FROM visitor_sessions vs LEFT JOIN page_views pv ON vs.session_id = pv.session_id WHERE vs.last_visit >= datetime('now', '-5 minutes') AND pv.id = (SELECT MAX(id) FROM page_views WHERE session_id = vs.session_id) ORDER BY vs.last_visit DESC",
+    [],
+    (err, visitors) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      res.json({ active_visitors: visitors.length, visitors });
+    }
+  );
 });
 
 // ==================== AFFILIATE LINKS ROUTES ====================

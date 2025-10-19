@@ -224,6 +224,13 @@
             const [editingProject, setEditingProject] = useState(null);
             const [user, setUser] = useState(null);
 
+            // New feature states
+            const [campaigns, setCampaigns] = useState([]);
+            const [incomeRecords, setIncomeRecords] = useState([]);
+            const [incomeDashboard, setIncomeDashboard] = useState(null);
+            const [analyticsData, setAnalyticsData] = useState(null);
+            const [realtimeVisitors, setRealtimeVisitors] = useState([]);
+
             useEffect(() => {
                 checkAuth();
             }, []);
@@ -327,7 +334,10 @@
                             messages,
                             onRefresh: loadData
                         }),
-                        currentView === 'analytics' && e(Analytics, { projects, messages })
+                        currentView === 'campaigns' && e(CampaignsManager),
+                        currentView === 'income' && e(IncomeManager),
+                        currentView === 'analytics' && e(EnhancedAnalytics),
+                        currentView === 'realtime' && e(RealtimeMonitor)
                     )
                 )
             );
@@ -396,7 +406,10 @@
                 { id: 'dashboard', label: 'Dashboard', icon: '📊' },
                 { id: 'projects', label: 'Projects', icon: '📁' },
                 { id: 'messages', label: 'Messages', icon: '💬' },
+                { id: 'campaigns', label: 'Campaigns', icon: '🎯' },
+                { id: 'income', label: 'Income', icon: '💰' },
                 { id: 'analytics', label: 'Analytics', icon: '📈' },
+                { id: 'realtime', label: 'Real-time', icon: '📡' },
             ];
 
             return e('div', { className: 'w-64 bg-slate-900 border-r border-slate-800' },
@@ -1027,7 +1040,7 @@
             );
         }
 
-        // Analytics Component
+        // Analytics Component (Basic - kept for backwards compatibility)
         function Analytics({ projects, messages }) {
             const [analytics, setAnalytics] = useState(null);
             const [timeframe, setTimeframe] = useState('7d');
@@ -1071,6 +1084,661 @@
                             analytics.summary?.projectViews || 0
                         ),
                         e('div', { className: 'text-slate-400' }, 'Project Views')
+                    )
+                )
+            );
+        }
+
+        // ==================== NEW COMPONENTS ====================
+
+        // Campaigns Manager Component
+        function CampaignsManager() {
+            const [campaigns, setCampaigns] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showCreateModal, setShowCreateModal] = useState(false);
+
+            useEffect(() => {
+                loadCampaigns();
+            }, []);
+
+            const loadCampaigns = async () => {
+                try {
+                    const res = await fetch('/api/campaigns');
+                    const data = await res.json();
+                    setCampaigns(data.data || []);
+                } catch (error) {
+                    console.error('Failed to load campaigns:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const createCampaign = async (formData) => {
+                try {
+                    const res = await fetch('/api/campaigns', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    if (res.ok) {
+                        loadCampaigns();
+                        setShowCreateModal(false);
+                    }
+                } catch (error) {
+                    console.error('Failed to create campaign:', error);
+                }
+            };
+
+            const generateLink = async (campaignId) => {
+                try {
+                    const res = await fetch(`/api/campaigns/${campaignId}/links`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(`Link generated: ${data.trackingUrl}\nShort code: ${data.shortCode}`);
+                        loadCampaigns();
+                    }
+                } catch (error) {
+                    console.error('Failed to generate link:', error);
+                }
+            };
+
+            return e('div', null,
+                e('div', { className: 'flex justify-between items-center mb-8' },
+                    e('h2', { className: 'text-3xl font-bold' }, '🎯 Campaigns'),
+                    e('button', {
+                        onClick: () => setShowCreateModal(true),
+                        className: 'bg-emerald-500 hover:bg-emerald-600 px-6 py-3 rounded-lg font-semibold transition-colors'
+                    }, '+ New Campaign')
+                ),
+
+                loading ? e('div', { className: 'text-center py-8' }, 'Loading...') :
+                campaigns.length === 0 ? e('div', { className: 'text-center py-12 text-slate-400' },
+                    e('p', null, 'No campaigns yet. Create your first campaign to start tracking links!')
+                ) :
+                e('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' },
+                    campaigns.map(campaign =>
+                        e('div', {
+                            key: campaign.id,
+                            className: 'bg-slate-800/50 rounded-xl p-6 border border-emerald-500/20 hover:border-emerald-500/40 transition-all'
+                        },
+                            e('div', { className: 'flex justify-between items-start mb-4' },
+                                e('h3', { className: 'text-xl font-semibold' }, campaign.name),
+                                e('span', {
+                                    className: `px-3 py-1 rounded-full text-xs font-medium ${
+                                        campaign.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-600/20 text-slate-400'
+                                    }`
+                                }, campaign.is_active ? 'Active' : 'Inactive')
+                            ),
+                            e('div', { className: 'space-y-2 mb-4' },
+                                e('div', { className: 'flex justify-between text-sm' },
+                                    e('span', { className: 'text-slate-400' }, 'Platform:'),
+                                    e('span', { className: 'font-medium capitalize' }, campaign.platform)
+                                ),
+                                e('div', { className: 'flex justify-between text-sm' },
+                                    e('span', { className: 'text-slate-400' }, 'Total Clicks:'),
+                                    e('span', { className: 'font-bold text-emerald-400' }, campaign.total_clicks || 0)
+                                ),
+                                e('div', { className: 'flex justify-between text-sm' },
+                                    e('span', { className: 'text-slate-400' }, 'Unique Clicks:'),
+                                    e('span', { className: 'font-bold text-blue-400' }, campaign.unique_clicks || 0)
+                                ),
+                                e('div', { className: 'flex justify-between text-sm' },
+                                    e('span', { className: 'text-slate-400' }, 'Links:'),
+                                    e('span', { className: 'font-medium' }, campaign.link_count || 0)
+                                )
+                            ),
+                            e('button', {
+                                onClick: () => generateLink(campaign.id),
+                                className: 'w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 py-2 rounded-lg transition-colors'
+                            }, '+ Generate Link')
+                        )
+                    )
+                ),
+
+                showCreateModal && e(CreateCampaignModal, {
+                    onClose: () => setShowCreateModal(false),
+                    onSubmit: createCampaign
+                })
+            );
+        }
+
+        // Create Campaign Modal
+        function CreateCampaignModal({ onClose, onSubmit }) {
+            const [formData, setFormData] = useState({
+                name: '',
+                platform: 'twitter',
+                comment_format: '',
+                description: '',
+                target_url: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSubmit(formData);
+            };
+
+            return e('div', { className: 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50' },
+                e('div', { className: 'bg-slate-800 rounded-2xl w-full max-w-2xl' },
+                    e('form', { onSubmit: handleSubmit },
+                        e('div', { className: 'p-6 border-b border-slate-700' },
+                            e('h3', { className: 'text-2xl font-bold' }, 'Create New Campaign')
+                        ),
+                        e('div', { className: 'p-6 space-y-4' },
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Campaign Name *'),
+                                e('input', {
+                                    type: 'text',
+                                    value: formData.name,
+                                    onChange: (e) => setFormData({...formData, name: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    required: true,
+                                    placeholder: 'e.g., Summer Product Launch'
+                                })
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Platform *'),
+                                e('select', {
+                                    value: formData.platform,
+                                    onChange: (e) => setFormData({...formData, platform: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none'
+                                },
+                                    e('option', { value: 'twitter' }, 'Twitter'),
+                                    e('option', { value: 'linkedin' }, 'LinkedIn'),
+                                    e('option', { value: 'instagram' }, 'Instagram'),
+                                    e('option', { value: 'other' }, 'Other')
+                                )
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Comment Format *'),
+                                e('textarea', {
+                                    value: formData.comment_format,
+                                    onChange: (e) => setFormData({...formData, comment_format: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    rows: 3,
+                                    required: true,
+                                    placeholder: 'Template for your comments...'
+                                })
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Target URL *'),
+                                e('input', {
+                                    type: 'url',
+                                    value: formData.target_url,
+                                    onChange: (e) => setFormData({...formData, target_url: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    required: true,
+                                    placeholder: 'https://example.com'
+                                })
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Description'),
+                                e('textarea', {
+                                    value: formData.description,
+                                    onChange: (e) => setFormData({...formData, description: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    rows: 2,
+                                    placeholder: 'Campaign notes...'
+                                })
+                            )
+                        ),
+                        e('div', { className: 'p-6 border-t border-slate-700 flex justify-end gap-4' },
+                            e('button', {
+                                type: 'button',
+                                onClick: onClose,
+                                className: 'px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors'
+                            }, 'Cancel'),
+                            e('button', {
+                                type: 'submit',
+                                className: 'px-6 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg font-semibold transition-colors'
+                            }, 'Create Campaign')
+                        )
+                    )
+                )
+            );
+        }
+
+        // Income Manager Component
+        function IncomeManager() {
+            const [dashboard, setDashboard] = useState(null);
+            const [records, setRecords] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showCreateModal, setShowCreateModal] = useState(false);
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = async () => {
+                try {
+                    const [dashRes, recordsRes] = await Promise.all([
+                        fetch('/api/income/dashboard'),
+                        fetch('/api/income')
+                    ]);
+                    const dashData = await dashRes.json();
+                    const recordsData = await recordsRes.json();
+                    setDashboard(dashData);
+                    setRecords(recordsData.data || []);
+                } catch (error) {
+                    console.error('Failed to load income data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const createIncome = async (formData) => {
+                try {
+                    const res = await fetch('/api/income', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    if (res.ok) {
+                        loadData();
+                        setShowCreateModal(false);
+                    }
+                } catch (error) {
+                    console.error('Failed to create income record:', error);
+                }
+            };
+
+            return e('div', null,
+                e('div', { className: 'flex justify-between items-center mb-8' },
+                    e('h2', { className: 'text-3xl font-bold' }, '💰 Income Tracker'),
+                    e('button', {
+                        onClick: () => setShowCreateModal(true),
+                        className: 'bg-emerald-500 hover:bg-emerald-600 px-6 py-3 rounded-lg font-semibold transition-colors'
+                    }, '+ Add Income')
+                ),
+
+                loading ? e('div', { className: 'text-center py-8' }, 'Loading...') :
+                e('div', null,
+                    dashboard && e('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-8' },
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-emerald-400 mb-2' },
+                                '$' + (dashboard.currentMonth?.total || 0).toLocaleString()
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'This Month'),
+                            e('div', { className: 'text-sm text-slate-500 mt-1' },
+                                `${dashboard.currentMonth?.count || 0} payments`
+                            )
+                        ),
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-blue-400 mb-2' },
+                                '$' + (dashboard.ytd?.total || 0).toLocaleString()
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Year to Date'),
+                            e('div', { className: 'text-sm text-slate-500 mt-1' },
+                                `${dashboard.ytd?.count || 0} payments`
+                            )
+                        ),
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-yellow-400 mb-2' },
+                                dashboard.pending?.length || 0
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Pending Payments')
+                        )
+                    ),
+
+                    e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                        e('h3', { className: 'text-xl font-semibold mb-4' }, 'Recent Income Records'),
+                        records.length === 0 ? e('div', { className: 'text-center py-8 text-slate-400' },
+                            'No income records yet.'
+                        ) :
+                        e('div', { className: 'overflow-x-auto' },
+                            e('table', { className: 'w-full' },
+                                e('thead', null,
+                                    e('tr', { className: 'text-left text-slate-400 text-sm' },
+                                        e('th', { className: 'pb-3' }, 'Client'),
+                                        e('th', { className: 'pb-3' }, 'Amount'),
+                                        e('th', { className: 'pb-3' }, 'Date'),
+                                        e('th', { className: 'pb-3' }, 'Status'),
+                                        e('th', { className: 'pb-3' }, 'Category')
+                                    )
+                                ),
+                                e('tbody', null,
+                                    records.slice(0, 10).map(record =>
+                                        e('tr', {
+                                            key: record.id,
+                                            className: 'border-t border-slate-700'
+                                        },
+                                            e('td', { className: 'py-3 font-medium' }, record.client_name),
+                                            e('td', { className: 'py-3 text-emerald-400 font-bold' },
+                                                `$${parseFloat(record.amount).toLocaleString()}`
+                                            ),
+                                            e('td', { className: 'py-3 text-sm text-slate-400' },
+                                                record.payment_date ? new Date(record.payment_date).toLocaleDateString() : 'N/A'
+                                            ),
+                                            e('td', { className: 'py-3' },
+                                                e('span', {
+                                                    className: `px-2 py-1 rounded text-xs font-medium ${
+                                                        record.status === 'received' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                        record.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
+                                                    }`
+                                                }, record.status)
+                                            ),
+                                            e('td', { className: 'py-3 text-sm text-slate-400 capitalize' }, record.category)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+
+                showCreateModal && e(CreateIncomeModal, {
+                    onClose: () => setShowCreateModal(false),
+                    onSubmit: createIncome
+                })
+            );
+        }
+
+        // Create Income Modal
+        function CreateIncomeModal({ onClose, onSubmit }) {
+            const [formData, setFormData] = useState({
+                client_name: '',
+                amount: '',
+                currency: 'USD',
+                payment_date: new Date().toISOString().split('T')[0],
+                status: 'received',
+                category: 'project',
+                invoice_number: '',
+                notes: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSubmit(formData);
+            };
+
+            return e('div', { className: 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50' },
+                e('div', { className: 'bg-slate-800 rounded-2xl w-full max-w-2xl' },
+                    e('form', { onSubmit: handleSubmit },
+                        e('div', { className: 'p-6 border-b border-slate-700' },
+                            e('h3', { className: 'text-2xl font-bold' }, 'Add Income Record')
+                        ),
+                        e('div', { className: 'p-6 space-y-4' },
+                            e('div', { className: 'grid grid-cols-2 gap-4' },
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium mb-2' }, 'Client Name *'),
+                                    e('input', {
+                                        type: 'text',
+                                        value: formData.client_name,
+                                        onChange: (e) => setFormData({...formData, client_name: e.target.value}),
+                                        className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                        required: true
+                                    })
+                                ),
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium mb-2' }, 'Amount *'),
+                                    e('input', {
+                                        type: 'number',
+                                        step: '0.01',
+                                        value: formData.amount,
+                                        onChange: (e) => setFormData({...formData, amount: e.target.value}),
+                                        className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                        required: true
+                                    })
+                                )
+                            ),
+                            e('div', { className: 'grid grid-cols-3 gap-4' },
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium mb-2' }, 'Payment Date'),
+                                    e('input', {
+                                        type: 'date',
+                                        value: formData.payment_date,
+                                        onChange: (e) => setFormData({...formData, payment_date: e.target.value}),
+                                        className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none'
+                                    })
+                                ),
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium mb-2' }, 'Status'),
+                                    e('select', {
+                                        value: formData.status,
+                                        onChange: (e) => setFormData({...formData, status: e.target.value}),
+                                        className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none'
+                                    },
+                                        e('option', { value: 'received' }, 'Received'),
+                                        e('option', { value: 'pending' }, 'Pending'),
+                                        e('option', { value: 'overdue' }, 'Overdue')
+                                    )
+                                ),
+                                e('div', null,
+                                    e('label', { className: 'block text-sm font-medium mb-2' }, 'Category'),
+                                    e('select', {
+                                        value: formData.category,
+                                        onChange: (e) => setFormData({...formData, category: e.target.value}),
+                                        className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none'
+                                    },
+                                        e('option', { value: 'project' }, 'Project'),
+                                        e('option', { value: 'consulting' }, 'Consulting'),
+                                        e('option', { value: 'maintenance' }, 'Maintenance'),
+                                        e('option', { value: 'other' }, 'Other')
+                                    )
+                                )
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Invoice Number'),
+                                e('input', {
+                                    type: 'text',
+                                    value: formData.invoice_number,
+                                    onChange: (e) => setFormData({...formData, invoice_number: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    placeholder: 'INV-2024-001'
+                                })
+                            ),
+                            e('div', null,
+                                e('label', { className: 'block text-sm font-medium mb-2' }, 'Notes'),
+                                e('textarea', {
+                                    value: formData.notes,
+                                    onChange: (e) => setFormData({...formData, notes: e.target.value}),
+                                    className: 'w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 focus:border-emerald-500 focus:outline-none',
+                                    rows: 2
+                                })
+                            )
+                        ),
+                        e('div', { className: 'p-6 border-t border-slate-700 flex justify-end gap-4' },
+                            e('button', {
+                                type: 'button',
+                                onClick: onClose,
+                                className: 'px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors'
+                            }, 'Cancel'),
+                            e('button', {
+                                type: 'submit',
+                                className: 'px-6 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-lg font-semibold transition-colors'
+                            }, 'Add Income')
+                        )
+                    )
+                )
+            );
+        }
+
+        // Enhanced Analytics Component
+        function EnhancedAnalytics() {
+            const [data, setData] = useState(null);
+            const [timeframe, setTimeframe] = useState('7d');
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                loadAnalytics();
+            }, [timeframe]);
+
+            const loadAnalytics = async () => {
+                try {
+                    const res = await fetch(`/api/analytics/dashboard?timeframe=${timeframe}`);
+                    const analyticsData = await res.json();
+                    setData(analyticsData);
+                } catch (error) {
+                    console.error('Failed to load analytics:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return e('div', null,
+                e('div', { className: 'flex justify-between items-center mb-8' },
+                    e('h2', { className: 'text-3xl font-bold' }, '📈 Enhanced Analytics'),
+                    e('select', {
+                        value: timeframe,
+                        onChange: (e) => setTimeframe(e.target.value),
+                        className: 'bg-slate-800 border border-slate-600 rounded-lg px-4 py-2'
+                    },
+                        e('option', { value: '1d' }, 'Last 24 hours'),
+                        e('option', { value: '7d' }, 'Last 7 days'),
+                        e('option', { value: '30d' }, 'Last 30 days')
+                    )
+                ),
+
+                loading ? e('div', { className: 'text-center py-8' }, 'Loading analytics...') :
+                data && e('div', null,
+                    e('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-6 mb-8' },
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-blue-400 mb-2' },
+                                data.overview?.[0]?.total_visitors || 0
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Total Visitors')
+                        ),
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-emerald-400 mb-2' },
+                                data.overview?.[0]?.total_page_views || 0
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Page Views')
+                        ),
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-purple-400 mb-2' },
+                                (data.overview?.[0]?.avg_pages_per_session || 0).toFixed(1)
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Avg Pages/Session')
+                        ),
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('div', { className: 'text-3xl font-bold text-yellow-400 mb-2' },
+                                Math.round(data.overview?.[0]?.avg_session_duration || 0) + 's'
+                            ),
+                            e('div', { className: 'text-slate-400' }, 'Avg Session')
+                        )
+                    ),
+
+                    e('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-6 mb-8' },
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('h3', { className: 'text-xl font-semibold mb-4' }, 'Traffic Sources'),
+                            (data.sources && data.sources.length > 0) ?
+                            e('div', { className: 'space-y-2' },
+                                data.sources.map((source, idx) =>
+                                    e('div', { key: idx, className: 'flex justify-between items-center' },
+                                        e('span', { className: 'text-slate-300' }, source.referrer_source || 'Direct'),
+                                        e('span', { className: 'font-bold text-emerald-400' }, source.visitors)
+                                    )
+                                )
+                            ) :
+                            e('div', { className: 'text-slate-500 text-center py-4' }, 'No data yet')
+                        ),
+
+                        e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                            e('h3', { className: 'text-xl font-semibold mb-4' }, 'Device Breakdown'),
+                            (data.devices && data.devices.length > 0) ?
+                            e('div', { className: 'space-y-2' },
+                                data.devices.map((device, idx) =>
+                                    e('div', { key: idx, className: 'flex justify-between items-center' },
+                                        e('span', { className: 'text-slate-300 capitalize' }, device.device_type || 'Unknown'),
+                                        e('span', { className: 'font-bold text-blue-400' }, device.visitors)
+                                    )
+                                )
+                            ) :
+                            e('div', { className: 'text-slate-500 text-center py-4' }, 'No data yet')
+                        )
+                    ),
+
+                    e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                        e('h3', { className: 'text-xl font-semibold mb-4' }, 'Top Pages'),
+                        (data.pages && data.pages.length > 0) ?
+                        e('div', { className: 'space-y-3' },
+                            data.pages.map((page, idx) =>
+                                e('div', {
+                                    key: idx,
+                                    className: 'flex justify-between items-center pb-3 border-b border-slate-700 last:border-0'
+                                },
+                                    e('div', null,
+                                        e('div', { className: 'font-medium text-slate-200' }, page.page_url),
+                                        e('div', { className: 'text-sm text-slate-500' },
+                                            `Avg time: ${Math.round(page.avg_time_on_page || 0)}s`
+                                        )
+                                    ),
+                                    e('span', { className: 'font-bold text-emerald-400' }, `${page.views} views`)
+                                )
+                            )
+                        ) :
+                        e('div', { className: 'text-slate-500 text-center py-8' }, 'No page views yet')
+                    )
+                )
+            );
+        }
+
+        // Real-time Monitor Component
+        function RealtimeMonitor() {
+            const [visitors, setVisitors] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                loadVisitors();
+                const interval = setInterval(loadVisitors, 10000); // Refresh every 10 seconds
+                return () => clearInterval(interval);
+            }, []);
+
+            const loadVisitors = async () => {
+                try {
+                    const res = await fetch('/api/analytics/realtime');
+                    const data = await res.json();
+                    setVisitors(data.visitors || []);
+                } catch (error) {
+                    console.error('Failed to load real-time data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return e('div', null,
+                e('div', { className: 'flex justify-between items-center mb-8' },
+                    e('h2', { className: 'text-3xl font-bold' }, '📡 Real-time Visitors'),
+                    e('div', { className: 'flex items-center gap-2' },
+                        e('div', { className: 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse' }),
+                        e('span', { className: 'text-slate-400' }, 'Live')
+                    )
+                ),
+
+                e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-6' },
+                    e('div', { className: 'text-5xl font-bold text-emerald-400 mb-2' }, visitors.length),
+                    e('div', { className: 'text-slate-400' }, 'Active Visitors (last 5 minutes)')
+                ),
+
+                loading ? e('div', { className: 'text-center py-8' }, 'Loading...') :
+                visitors.length === 0 ? e('div', { className: 'text-center py-12 text-slate-400' },
+                    e('p', null, 'No active visitors right now.')
+                ) :
+                e('div', { className: 'bg-slate-800/50 rounded-xl p-6 border border-slate-700' },
+                    e('h3', { className: 'text-xl font-semibold mb-4' }, 'Active Sessions'),
+                    e('div', { className: 'space-y-3' },
+                        visitors.map((visitor, idx) =>
+                            e('div', {
+                                key: idx,
+                                className: 'flex items-center justify-between p-3 bg-slate-800/30 rounded-lg'
+                            },
+                                e('div', { className: 'flex items-center gap-3' },
+                                    e('div', { className: 'w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center' },
+                                        e('span', null, visitor.device_type === 'mobile' ? '📱' :
+                                                        visitor.device_type === 'tablet' ? '📲' : '💻')
+                                    ),
+                                    e('div', null,
+                                        e('div', { className: 'font-medium text-sm' }, visitor.current_page || 'Homepage'),
+                                        e('div', { className: 'text-xs text-slate-500 capitalize' },
+                                            `${visitor.device_type || 'Unknown'} • Session: ${visitor.session_id.substring(0, 8)}...`
+                                        )
+                                    )
+                                ),
+                                e('div', { className: 'text-xs text-slate-500' },
+                                    new Date(visitor.last_visit).toLocaleTimeString()
+                                )
+                            )
+                        )
                     )
                 )
             );
