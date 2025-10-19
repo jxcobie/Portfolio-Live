@@ -106,19 +106,13 @@ const CircuitTrace = memo<CircuitTraceProps>(
         />
 
         {/* Animated pulse along the trace */}
-        <motion.circle
+        <circle
           r="3"
           fill="rgba(0, 255, 136, 0.8)"
           filter={`url(#glow-${startElement}-${endElement})`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{
-            duration: 0.5,
-            delay: delay + 1.5,
-          }}
         >
           <animateMotion dur="3s" repeatCount="indefinite" path={path} begin={`${delay + 1.5}s`} />
-        </motion.circle>
+        </circle>
       </svg>
     );
   }
