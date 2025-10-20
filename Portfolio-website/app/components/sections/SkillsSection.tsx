@@ -10,24 +10,28 @@ import CircuitTrace from '../shared/CircuitTrace';
 const skillCategories: SkillCategory[] = [
   {
     id: 'frontend',
+    category: 'frontend',
     title: 'Frontend Development',
     skills: ['React', 'Next.js', 'TypeScript', 'Tailwind CSS'],
     color: 'cyan',
   },
   {
     id: 'backend',
+    category: 'backend',
     title: 'Backend Development',
     skills: ['Node.js', 'Python', 'PostgreSQL', 'REST APIs'],
     color: 'orange',
   },
   {
     id: 'automation',
+    category: 'automation',
     title: 'Automation & Integration',
     skills: ['n8n Workflows', 'API Integration', 'Webhooks', 'Data Processing'],
     color: 'purple',
   },
   {
     id: 'tools',
+    category: 'tools',
     title: 'Tools & Technologies',
     skills: ['Git', 'Docker', 'AWS', 'Vercel'],
     color: 'green',
@@ -42,20 +46,20 @@ interface SkillCardProps {
 
 const SkillCard = memo<SkillCardProps>(({ category, index }) => (
   <motion.div
-    id={category.id}
+    id={category.category}
     className={`skill-card ${category.color}`}
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.6, delay: index * 0.1 }}
     viewport={{ once: true }}
     role="group"
-    aria-labelledby={`skill-${category.id}-title`}
+    aria-labelledby={`skill-${category.category}-title`}
   >
     <div className="skill-header">
       <span className="skill-icon" aria-hidden="true">
         ◈
       </span>
-      <h3 id={`skill-${category.id}-title`}>{category.title}</h3>
+      <h3 id={`skill-${category.category}-title`}>{category.title}</h3>
     </div>
 
     <div className="skill-list" role="list">
@@ -80,7 +84,7 @@ SkillCard.displayName = 'SkillCard';
 const SkillsGrid = memo(() => (
   <div className="skills-grid">
     {skillCategories.map((category, index) => (
-      <SkillCard key={category.id} category={category} index={index} />
+      <SkillCard key={category.category} category={category} index={index} />
     ))}
   </div>
 ));

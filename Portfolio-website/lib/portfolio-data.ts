@@ -7,7 +7,7 @@ import { PortfolioData } from '@/lib/types';
  * @version 1.0.0
  * @author Jacob Jaballah
  */
-export const portfolioData: PortfolioData = {
+export const portfolioData = {
   personal: {
     name: 'Jacob Jaballah',
     title: 'FULL-STACK DEVELOPER • N8N AUTOMATION EXPERT',
@@ -89,7 +89,7 @@ When I'm not coding, you'll find me exploring new technologies, optimizing workf
       description:
         'Full-stack e-commerce platform with automated inventory management, order processing, and customer communication workflows using n8n.',
       tech: ['Next.js', 'PostgreSQL', 'n8n', 'Stripe API', 'Email Automation'],
-      status: 'Featured Project',
+      status: 'Deployed',
       link: '#',
       image: '/images/projects/ecommerce-suite.jpg',
       featured: true,
@@ -117,7 +117,7 @@ When I'm not coding, you'll find me exploring new technologies, optimizing workf
       description:
         'Custom CRM solution with automated lead scoring, follow-up sequences, and multi-platform data synchronization.',
       tech: ['React', 'Node.js', 'n8n', 'HubSpot API', 'MongoDB'],
-      status: 'Client Work',
+      status: 'Completed',
       link: '#',
       image: '/images/projects/crm-platform.jpg',
       featured: true,
@@ -144,7 +144,7 @@ When I'm not coding, you'll find me exploring new technologies, optimizing workf
       description:
         'Comprehensive dashboard for managing multiple social media accounts with automated posting, analytics, and engagement tracking.',
       tech: ['React', 'Express.js', 'n8n', 'Social Media APIs', 'Chart.js'],
-      status: 'Portfolio Project',
+      status: 'Completed',
       link: '#',
       image: '/images/projects/social-dashboard.jpg',
       featured: false,

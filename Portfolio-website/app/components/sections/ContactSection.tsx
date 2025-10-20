@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { ContactFormData, ContactSubmissionResult } from '@/app/types';
 import SectionHeader from '../shared/SectionHeader';
 
-// Zod validation schema
+// Zod validation schema - matches ContactFormData type
 const contactSchema = z.object({
   name: z
     .string()
@@ -23,6 +23,12 @@ const contactSchema = z.object({
     .string()
     .min(10, 'Message must be at least 10 characters')
     .max(5000, 'Message must be less than 5000 characters'),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  projectType: z.string().optional(),
+  budget: z.string().optional(),
+  timeline: z.string().optional(),
+  honeypot: z.string().optional(),
 });
 
 // Form Field Component

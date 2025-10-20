@@ -2015,6 +2015,419 @@ app.get('/api/affiliate/export', requireApiKey, (req, res) => {
   });
 });
 
+// ==================== BOOKING SYSTEM ====================
+
+const { createTransport } = require('nodemailer');
+
+// Email transporter
+const emailTransporter = createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// Verify email on startup
+emailTransporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Email configuration error:', error);
+  } else {
+    console.log('✅ Email server ready');
+  }
+});
+
+// Helper: Generate meeting link
+function generateMeetLink(bookingId) {
+  return `https://meet.google.com/new`;
+}
+
+// Helper: Send booking confirmation email
+async function sendBookingConfirmation(booking) {
+  const meetLink = booking.meeting_link;
+  const bookingDate = new Date(booking.date);
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: -apple-system, sans-serif; background: #f8fafc; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #10b981, #3b82f6); padding: 40px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .content { padding: 40px; }
+        .meeting-card { background: #f1f5f9; padding: 24px; border-radius: 12px; margin: 24px 0; border-left: 4px solid #10b981; }
+        .detail { margin: 12px 0; color: #475569; }
+        .button { display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }
+        .footer { background: #f8fafc; padding: 30px; text-align: center; color: #64748b; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🎉 Meeting Confirmed!</h1>
+        </div>
+        <div class="content">
+          <p style="font-size: 18px; font-weight: 600;">Hi ${booking.name},</p>
+          <p>Your consultation has been successfully scheduled.</p>
+          <div class="meeting-card">
+            <h3>📋 Meeting Details</h3>
+            <div class="detail"><strong>📅 Date:</strong> ${bookingDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div class="detail"><strong>🕐 Time:</strong> ${booking.time} (${booking.duration} minutes)</div>
+            <div class="detail"><strong>📹 Platform:</strong> Google Meet</div>
+            <div class="detail"><strong>📧 Email:</strong> ${booking.email}</div>
+            ${booking.notes ? `<div class="detail"><strong>📝 Notes:</strong> ${booking.notes}</div>` : ''}
+          </div>
+          <div style="text-align: center;">
+            <a href="${meetLink}" class="button">Join Meeting</a>
+          </div>
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin: 24px 0;">
+            <strong>💡 Preparation Tips:</strong>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+              <li>Join from a quiet space with stable internet</li>
+              <li>Have your project details ready</li>
+              <li>Test camera and microphone beforehand</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer">
+          <p>Looking forward to speaking with you! 👋</p>
+          <p style="margin-top: 10px;">Need to reschedule? Reply to this email 24 hours before.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await emailTransporter.sendMail({
+    from: `"Portfolio" <${process.env.EMAIL_FROM}>`,
+    to: booking.email,
+    subject: `✅ Meeting Confirmed - ${bookingDate.toLocaleDateString()} at ${booking.time}`,
+    html,
+  });
+
+  // Send copy to yourself
+  await emailTransporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: process.env.EMAIL_FROM,
+    subject: `🔔 New Booking: ${booking.name}`,
+    html: `
+      <h2>New Meeting Booked</h2>
+      <p><strong>Name:</strong> ${booking.name}</p>
+      <p><strong>Email:</strong> ${booking.email}</p>
+      <p><strong>Phone:</strong> ${booking.phone || 'Not provided'}</p>
+      <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
+      <p><strong>Time:</strong> ${booking.time} (${booking.duration} min)</p>
+      ${booking.notes ? `<p><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+      <p><a href="${meetLink}">Meeting Link</a></p>
+    `,
+  });
+}
+
+// CREATE BOOKING
+app.post('/api/bookings', async (req, res) => {
+  const { name, email, phone, date, time, duration, meetingType, notes } = req.body;
+
+  if (!name || !email || !date || !time || !duration) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Check if slot is available
+  db.get(
+    'SELECT id FROM bookings WHERE date = ? AND time = ? AND status = "confirmed"',
+    [date, time],
+    async (err, existing) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (existing) return res.status(409).json({ error: 'Time slot no longer available' });
+
+      db.run(
+        `INSERT INTO bookings (name, email, phone, date, time, duration, meeting_type, notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
+        [name, email, phone, date, time, duration, meetingType, notes],
+        async function (err) {
+          if (err) return res.status(500).json({ error: 'Failed to create booking' });
+
+          const bookingId = this.lastID;
+          const meetingLink = generateMeetLink(bookingId);
+
+          db.run('UPDATE bookings SET meeting_link = ? WHERE id = ?', [meetingLink, bookingId]);
+
+          db.get('SELECT * FROM bookings WHERE id = ?', [bookingId], async (err, booking) => {
+            try {
+              await sendBookingConfirmation(booking);
+              console.log(`✅ Booking created: ${booking.name} - ${booking.date} ${booking.time}`);
+            } catch (emailError) {
+              console.error('Email error:', emailError);
+            }
+
+            res.status(201).json({
+              success: true,
+              bookingId,
+              booking: { id: bookingId, name, email, date, time, duration, meetingLink },
+              message: 'Booking confirmed! Check your email.',
+            });
+          });
+        }
+      );
+    }
+  );
+});
+
+// GET ALL BOOKINGS (Admin)
+app.get('/api/bookings', requireAuth, (req, res) => {
+  const { status, date, upcoming } = req.query;
+  let query = 'SELECT * FROM bookings WHERE 1=1';
+  const params = [];
+
+  if (status) {
+    query += ' AND status = ?';
+    params.push(status);
+  }
+  if (date) {
+    query += ' AND date = ?';
+    params.push(date);
+  }
+  if (upcoming === 'true') {
+    query += ' AND date >= date("now") AND status = "confirmed"';
+  }
+
+  query += ' ORDER BY date ASC, time ASC';
+
+  db.all(query, params, (err, bookings) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json({
+      data: bookings,
+      meta: {
+        total: bookings.length,
+        upcoming: bookings.filter(b => b.date >= new Date().toISOString().split('T')[0] && b.status === 'confirmed').length,
+      },
+    });
+  });
+});
+
+// UPDATE BOOKING STATUS
+app.put('/api/bookings/:id/status', requireAuth, (req, res) => {
+  const { status } = req.body;
+  if (!['confirmed', 'cancelled', 'completed', 'no-show'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  db.run(
+    'UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [status, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to update' });
+      res.json({ success: true, message: `Booking ${status}` });
+    }
+  );
+});
+
+// DELETE BOOKING
+app.delete('/api/bookings/:id', requireAuth, (req, res) => {
+  db.run('DELETE FROM bookings WHERE id = ?', [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete' });
+    res.json({ success: true });
+  });
+});
+
+// GET AVAILABILITY FOR DATE (with dynamic working hours)
+app.get('/api/bookings/availability/:date', (req, res) => {
+  const { date } = req.params;
+  const { duration = 30 } = req.query;
+  const dayOfWeek = new Date(date).getDay();
+
+  // Check if day has availability override
+  db.get('SELECT * FROM availability_overrides WHERE date = ?', [date], (err, override) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+
+    // If day is marked unavailable, return empty
+    if (override && !override.is_available) {
+      return res.json({
+        date,
+        isAvailable: false,
+        reason: override.reason,
+        availableSlots: [],
+      });
+    }
+
+    // Get working hours for this day
+    db.all(
+      'SELECT * FROM working_hours WHERE day_of_week = ? AND is_working = 1',
+      [dayOfWeek],
+      (err, workingHours) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+
+        // Get custom available slots for this date
+        db.all('SELECT * FROM available_slots WHERE date = ?', [date], (err, customSlots) => {
+          if (err) return res.status(500).json({ error: 'Database error' });
+
+          // Get blocked slots
+          db.all('SELECT * FROM blocked_slots WHERE date = ?', [date], (err, blockedSlots) => {
+            if (err) return res.status(500).json({ error: 'Database error' });
+
+            // Get booked slots
+            db.all(
+              'SELECT time, duration FROM bookings WHERE date = ? AND status = "confirmed"',
+              [date],
+              (err, bookedSlots) => {
+                if (err) return res.status(500).json({ error: 'Database error' });
+
+                // Generate all possible slots
+                let allSlots = [];
+
+                // Use custom slots if available, otherwise use working hours
+                const timeRanges = customSlots.length > 0 ? customSlots : workingHours;
+
+                timeRanges.forEach(range => {
+                  const start = range.start_time.split(':');
+                  const end = range.end_time.split(':');
+                  const startMin = parseInt(start[0]) * 60 + parseInt(start[1]);
+                  const endMin = parseInt(end[0]) * 60 + parseInt(end[1]);
+
+                  for (let min = startMin; min < endMin; min += parseInt(duration)) {
+                    if (min + parseInt(duration) <= endMin) {
+                      const hour = Math.floor(min / 60);
+                      const minute = min % 60;
+                      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                      allSlots.push(time);
+                    }
+                  }
+                });
+
+                // Filter out blocked and booked slots
+                const availableSlots = allSlots.filter(slot => {
+                  const isBooked = bookedSlots.some(b => b.time === slot);
+                  const isBlocked = blockedSlots.some(blocked => slot >= blocked.start_time && slot < blocked.end_time);
+                  return !isBooked && !isBlocked;
+                });
+
+                res.json({
+                  date,
+                  dayOfWeek,
+                  isAvailable: availableSlots.length > 0,
+                  duration: parseInt(duration),
+                  workingHours: timeRanges.map(r => ({ start: r.start_time, end: r.end_time })),
+                  availableSlots,
+                  bookedCount: bookedSlots.length,
+                  blockedCount: blockedSlots.length,
+                });
+              }
+            );
+          });
+        });
+      }
+    );
+  });
+});
+
+// SET AVAILABILITY OVERRIDE (Admin)
+app.post('/api/bookings/availability/override', requireAuth, (req, res) => {
+  const { date, is_available, custom_hours, reason } = req.body;
+
+  if (!date || is_available === undefined) {
+    return res.status(400).json({ error: 'Date and is_available are required' });
+  }
+
+  db.run(
+    `INSERT INTO availability_overrides (date, is_available, custom_hours, reason)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(date) DO UPDATE SET
+       is_available = excluded.is_available,
+       custom_hours = excluded.custom_hours,
+       reason = excluded.reason`,
+    [date, is_available ? 1 : 0, custom_hours, reason],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to set override' });
+      res.json({ success: true, message: 'Availability updated' });
+    }
+  );
+});
+
+// BLOCK TIME SLOT (Admin)
+app.post('/api/bookings/block', requireAuth, (req, res) => {
+  const { date, start_time, end_time, reason } = req.body;
+
+  if (!date || !start_time || !end_time) {
+    return res.status(400).json({ error: 'Date, start_time, and end_time required' });
+  }
+
+  db.run(
+    'INSERT INTO blocked_slots (date, start_time, end_time, reason) VALUES (?, ?, ?, ?)',
+    [date, start_time, end_time, reason || 'Blocked by admin'],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to block slot' });
+      res.status(201).json({ success: true, blockedSlotId: this.lastID });
+    }
+  );
+});
+
+// UNBLOCK TIME SLOT (Admin)
+app.delete('/api/bookings/block/:id', requireAuth, (req, res) => {
+  db.run('DELETE FROM blocked_slots WHERE id = ?', [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Failed to unblock' });
+    res.json({ success: true });
+  });
+});
+
+// GET BLOCKED SLOTS FOR DATE (Admin)
+app.get('/api/bookings/block/:date', requireAuth, (req, res) => {
+  db.all('SELECT * FROM blocked_slots WHERE date = ?', [req.params.date], (err, slots) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json({ data: slots });
+  });
+});
+
+// ADD AVAILABLE SLOT (Admin - custom availability)
+app.post('/api/bookings/available', requireAuth, (req, res) => {
+  const { date, start_time, end_time, slot_duration, notes } = req.body;
+
+  if (!date || !start_time || !end_time) {
+    return res.status(400).json({ error: 'Date, start_time, and end_time required' });
+  }
+
+  db.run(
+    'INSERT INTO available_slots (date, start_time, end_time, slot_duration, notes) VALUES (?, ?, ?, ?, ?)',
+    [date, start_time, end_time, slot_duration || 30, notes],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to add slot' });
+      res.status(201).json({ success: true, slotId: this.lastID });
+    }
+  );
+});
+
+// DELETE AVAILABLE SLOT (Admin)
+app.delete('/api/bookings/available/:id', requireAuth, (req, res) => {
+  db.run('DELETE FROM available_slots WHERE id = ?', [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: 'Failed to delete' });
+    res.json({ success: true });
+  });
+});
+
+// GET WORKING HOURS (Admin)
+app.get('/api/bookings/working-hours', requireAuth, (req, res) => {
+  db.all('SELECT * FROM working_hours ORDER BY day_of_week', [], (err, hours) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json({ data: hours });
+  });
+});
+
+// UPDATE WORKING HOURS (Admin)
+app.put('/api/bookings/working-hours/:dayOfWeek', requireAuth, (req, res) => {
+  const { start_time, end_time, is_working } = req.body;
+
+  db.run(
+    'UPDATE working_hours SET start_time = ?, end_time = ?, is_working = ? WHERE day_of_week = ?',
+    [start_time, end_time, is_working ? 1 : 0, req.params.dayOfWeek],
+    function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to update' });
+      res.json({ success: true });
+    }
+  );
+});
+
 // ==================== ADMIN DASHBOARD ====================
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));

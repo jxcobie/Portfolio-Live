@@ -12,18 +12,21 @@ const timelineData: TimelineItem[] = [
     year: '2022 - Present',
     title: 'Full-Stack Developer & Automation Expert',
     description: 'Building scalable web applications and automation workflows',
+    type: 'work',
   },
   {
     id: '2',
     year: '2020 - 2022',
     title: 'Software Development Intern at Deus Media Group',
     description: 'Gained experience in full-stack development and project management',
+    type: 'work',
   },
   {
     id: '3',
     year: '2018',
     title: 'Deployed first react project',
     description: 'Started journey into modern web development',
+    type: 'achievement',
   },
 ];
 

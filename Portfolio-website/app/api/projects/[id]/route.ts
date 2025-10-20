@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 const CMS_URL = process.env.CMS_URL || 'http://localhost:1337';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    // Await params in Next.js 15
-    const { id } = await params;
+  // Await params in Next.js 15
+  const { id } = await params;
 
+  try {
     // First, try to fetch from the public endpoint
     const response = await fetch(`${CMS_URL}/api/projects/public/${id}`, {
       cache: 'no-store',

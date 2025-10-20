@@ -1,6 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const fs = require('fs');
 
 // Create or connect to database
 const db = new sqlite3.Database(path.join(__dirname, '..', 'cms_database.db'));
@@ -429,6 +430,27 @@ db.serialize(() => {
   }
   analyticsStmt.finalize();
   console.log('✅ Sample analytics added');
+
+  // Add booking system tables
+  console.log('📅 Creating booking system tables...');
+  try {
+    const bookingSchema = fs.readFileSync(path.join(__dirname, 'booking-schema.sql'), 'utf8');
+    const statements = bookingSchema.split(';').filter(stmt => stmt.trim());
+
+    statements.forEach(statement => {
+      if (statement.trim()) {
+        db.run(statement, (err) => {
+          if (err && !err.message.includes('already exists') && !err.message.includes('UNIQUE constraint')) {
+            console.error('Error creating booking table:', err);
+          }
+        });
+      }
+    });
+
+    console.log('✅ Booking system tables created');
+  } catch (err) {
+    console.error('Error loading booking schema:', err);
+  }
 
   console.log('\n🎉 Database initialization complete!');
   console.log('📌 You can now start the CMS server with: npm start');

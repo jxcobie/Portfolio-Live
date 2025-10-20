@@ -150,14 +150,14 @@ export type ProjectCategory =
 export interface Project {
   id: string | number;
   title: string;
-  slug: Slug;
+  slug: string;
   description: string;
   shortDescription?: string;
   status: ProjectStatus;
   category?: ProjectCategory;
-  liveUrl?: HttpUrl;
-  repoUrl?: HttpUrl;
-  demoUrl?: HttpUrl;
+  liveUrl?: string;
+  repoUrl?: string;
+  demoUrl?: string;
   coverImage?: ProjectImage;
   galleryImages?: ProjectImage[];
   technologies: Technology[];
@@ -198,7 +198,7 @@ export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
  * Skill category with skills
  */
 export interface SkillCategory {
-  id?: number;
+  id?: number | string;
   category: string;
   title?: string;
   skills: string[];
@@ -217,12 +217,12 @@ export interface PersonalInfo {
   tagline: string;
   about: string;
   longBio?: string;
-  email: EmailAddress;
+  email: string;
   phone?: string;
-  linkedin: HttpUrl;
-  github: HttpUrl;
-  twitter?: HttpUrl;
-  website?: HttpUrl;
+  linkedin: string;
+  github: string;
+  twitter?: string;
+  website?: string;
   location: string;
   timezone?: string;
   experience: string;
@@ -459,7 +459,7 @@ export interface RequestMetadata {
  */
 export interface ContactFormData {
   name: string;
-  email: EmailAddress;
+  email: string;
   subject?: string;
   message: string;
   phone?: string;

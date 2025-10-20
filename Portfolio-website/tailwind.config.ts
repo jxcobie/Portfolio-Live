@@ -10,7 +10,7 @@ import plugin from 'tailwindcss/plugin';
  * Integrates seamlessly with the custom design system from globals.css
  */
 
-const config: Config = {
+const config = {
   // ==================== CONTENT PATHS ====================
 
   /**

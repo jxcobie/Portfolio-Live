@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import Image from 'next/image';
-import { FloatingParticles } from '@/components/effects/FloatingParticles';
+// import { FloatingParticles } from '@/components/effects/FloatingParticles';
 import styles from './HeroSection.module.css';
 
 // Constants
@@ -76,7 +76,7 @@ export default function HeroSection() {
   return (
     <motion.section ref={heroRef} id="home" className={styles.heroSection} style={{ y, opacity }}>
       {/* Background Effects */}
-      <FloatingParticles />
+      {/* <FloatingParticles /> */}
       <div className={styles.scanlineOverlay} />
 
       {/* Intro Animation */}
