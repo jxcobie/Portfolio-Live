@@ -221,11 +221,7 @@ const CyberpunkErrorFallback: React.FC<CyberpunkErrorFallbackProps> = ({
           </motion.div>
 
           {/* Glitch Title */}
-          <motion.h1
-            initial={{ x: -20 }}
-            animate={{ x: 0 }}
-            className={styles.errorTitle}
-          >
+          <motion.h1 initial={{ x: -20 }} animate={{ x: 0 }} className={styles.errorTitle}>
             [{glitchText}: {getErrorCode()}]
           </motion.h1>
 
@@ -420,7 +416,10 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
     } catch (err) {
       // Only set error for non-404 errors (404s will have already called notFound())
       console.error('Error fetching project:', err);
-      const errorDetails = parseError(err, err instanceof Error && err.message.includes('404') ? 404 : undefined);
+      const errorDetails = parseError(
+        err,
+        err instanceof Error && err.message.includes('404') ? 404 : undefined
+      );
 
       // If it's a 404 error but we somehow got here, call notFound()
       if (errorDetails.type === ErrorType.NOT_FOUND) {
@@ -487,34 +486,43 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
             <div className={styles.headerTag}>[LOADING_PROJECT...]</div>
 
             {/* Title Skeleton */}
-            <div style={{
-              height: '3rem',
-              width: '70%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              marginBottom: '1rem',
-              border: '1px solid rgba(0, 255, 136, 0.2)'
-            }}></div>
+            <div
+              style={{
+                height: '3rem',
+                width: '70%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                marginBottom: '1rem',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+              }}
+            ></div>
 
             {/* Description Skeleton */}
-            <div style={{
-              height: '1.5rem',
-              width: '90%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              marginBottom: '0.5rem',
-              border: '1px solid rgba(0, 255, 136, 0.2)'
-            }}></div>
-            <div style={{
-              height: '1.5rem',
-              width: '60%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              border: '1px solid rgba(0, 255, 136, 0.2)'
-            }}></div>
+            <div
+              style={{
+                height: '1.5rem',
+                width: '90%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                marginBottom: '0.5rem',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+              }}
+            ></div>
+            <div
+              style={{
+                height: '1.5rem',
+                width: '60%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+              }}
+            ></div>
           </div>
 
           {/* Content Grid Skeleton */}
@@ -526,16 +534,19 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 <div className={styles.frameHeader}>
                   <span className={styles.frameTitle}>[LOADING_IMAGE...]</span>
                 </div>
-                <div style={{
-                  aspectRatio: '16/9',
-                  background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer 2s infinite',
-                  border: '1px solid rgba(0, 255, 136, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div
+                  style={{
+                    aspectRatio: '16/9',
+                    background:
+                      'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 2s infinite',
+                    border: '1px solid rgba(0, 255, 136, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   <span style={{ color: 'rgba(0, 255, 136, 0.5)', fontFamily: 'monospace' }}>
                     [LOADING_VISUAL_DATA...]
                   </span>
@@ -549,35 +560,44 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 </div>
                 {[...Array(3)].map((_, i) => (
                   <div key={i} style={{ marginBottom: '1rem' }}>
-                    <div style={{
-                      height: '1.2rem',
-                      width: '100%',
-                      background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                      backgroundSize: '200% 100%',
-                      animation: 'shimmer 2s infinite',
-                      marginBottom: '0.5rem',
-                      border: '1px solid rgba(0, 255, 136, 0.2)',
-                      animationDelay: `${i * 0.1}s`
-                    }}></div>
-                    <div style={{
-                      height: '1.2rem',
-                      width: '95%',
-                      background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                      backgroundSize: '200% 100%',
-                      animation: 'shimmer 2s infinite',
-                      marginBottom: '0.5rem',
-                      border: '1px solid rgba(0, 255, 136, 0.2)',
-                      animationDelay: `${i * 0.1 + 0.05}s`
-                    }}></div>
-                    <div style={{
-                      height: '1.2rem',
-                      width: '80%',
-                      background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                      backgroundSize: '200% 100%',
-                      animation: 'shimmer 2s infinite',
-                      border: '1px solid rgba(0, 255, 136, 0.2)',
-                      animationDelay: `${i * 0.1 + 0.1}s`
-                    }}></div>
+                    <div
+                      style={{
+                        height: '1.2rem',
+                        width: '100%',
+                        background:
+                          'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 2s infinite',
+                        marginBottom: '0.5rem',
+                        border: '1px solid rgba(0, 255, 136, 0.2)',
+                        animationDelay: `${i * 0.1}s`,
+                      }}
+                    ></div>
+                    <div
+                      style={{
+                        height: '1.2rem',
+                        width: '95%',
+                        background:
+                          'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 2s infinite',
+                        marginBottom: '0.5rem',
+                        border: '1px solid rgba(0, 255, 136, 0.2)',
+                        animationDelay: `${i * 0.1 + 0.05}s`,
+                      }}
+                    ></div>
+                    <div
+                      style={{
+                        height: '1.2rem',
+                        width: '80%',
+                        background:
+                          'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 2s infinite',
+                        border: '1px solid rgba(0, 255, 136, 0.2)',
+                        animationDelay: `${i * 0.1 + 0.1}s`,
+                      }}
+                    ></div>
                   </div>
                 ))}
               </div>
@@ -593,14 +613,18 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 <div className={styles.panelContent}>
                   <div className={styles.techGrid}>
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} style={{
-                        height: '2rem',
-                        background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                        backgroundSize: '200% 100%',
-                        animation: 'shimmer 2s infinite',
-                        border: '1px solid rgba(0, 255, 136, 0.2)',
-                        animationDelay: `${i * 0.1}s`
-                      }}></div>
+                      <div
+                        key={i}
+                        style={{
+                          height: '2rem',
+                          background:
+                            'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                          backgroundSize: '200% 100%',
+                          animation: 'shimmer 2s infinite',
+                          border: '1px solid rgba(0, 255, 136, 0.2)',
+                          animationDelay: `${i * 0.1}s`,
+                        }}
+                      ></div>
                     ))}
                   </div>
                 </div>
@@ -614,15 +638,18 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
                 <div className={styles.panelContent}>
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className={styles.infoItem} style={{ marginBottom: '0.75rem' }}>
-                      <div style={{
-                        height: '1rem',
-                        width: '100%',
-                        background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                        backgroundSize: '200% 100%',
-                        animation: 'shimmer 2s infinite',
-                        border: '1px solid rgba(0, 255, 136, 0.2)',
-                        animationDelay: `${i * 0.1}s`
-                      }}></div>
+                      <div
+                        style={{
+                          height: '1rem',
+                          width: '100%',
+                          background:
+                            'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                          backgroundSize: '200% 100%',
+                          animation: 'shimmer 2s infinite',
+                          border: '1px solid rgba(0, 255, 136, 0.2)',
+                          animationDelay: `${i * 0.1}s`,
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -631,13 +658,15 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </div>
 
           {/* Loading message */}
-          <div style={{
-            textAlign: 'center',
-            marginTop: '2rem',
-            fontFamily: 'monospace',
-            color: 'rgba(0, 255, 136, 0.7)',
-            fontSize: '0.875rem'
-          }}>
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: '2rem',
+              fontFamily: 'monospace',
+              color: 'rgba(0, 255, 136, 0.7)',
+              fontSize: '0.875rem',
+            }}
+          >
             <motion.span
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -649,8 +678,12 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
 
         <style jsx global>{`
           @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            0% {
+              background-position: -200% 0;
+            }
+            100% {
+              background-position: 200% 0;
+            }
           }
         `}</style>
       </div>
@@ -878,7 +911,10 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
       >
         <div className={styles.navGrid}>
           {previousProject ? (
-            <Link href={`/projects/${normalizeProjectId(previousProject.id)}`} className={styles.navCard}>
+            <Link
+              href={`/projects/${normalizeProjectId(previousProject.id)}`}
+              className={styles.navCard}
+            >
               <span className={styles.navArrow}>←</span>
               <div className={styles.navContent}>
                 <span className={styles.navLabel}>[PREVIOUS_PROJECT]</span>
@@ -895,7 +931,10 @@ function ProjectDetailContent({ params }: { params: Promise<{ id: string }> }) {
           </Link>
 
           {nextProject ? (
-            <Link href={`/projects/${normalizeProjectId(nextProject.id)}`} className={styles.navCard}>
+            <Link
+              href={`/projects/${normalizeProjectId(nextProject.id)}`}
+              className={styles.navCard}
+            >
               <div className={styles.navContent}>
                 <span className={styles.navLabel}>[NEXT_PROJECT]</span>
                 <span className={styles.navTitle}>{nextProject.title}</span>

@@ -1,0 +1,61 @@
+MCP Setup & Server Management Notes
+==================================
+
+Base Repo: /mnt/c/WORK/WEBSITE/JxcobCreations
+
+Prerequisites
+-------------
+1. Install Node.js 20+ and npm 10+ on the host shell.
+2. In the repo root run `npm install` (installs shared tools the MCP servers expect).
+3. Prepare environment files:
+   - `Portfolio-CMS/.env` (copy from `.env.example`, fill CMS_BOOTSTRAP_ADMIN_*, SESSION_SECRET, etc.).
+   - `Portfolio-website/.env.local` (copy template, set CMS_INTERNAL_URL/NEXT_PUBLIC_CMS_URL, CMS_API_KEY).
+
+VS Code Codex MCP Wiring
+------------------------
+1. Open VS Code settings → search “Codex MCP Servers”.
+2. Add entries that launch the dev servers:
+   ```json
+   [
+     {
+       "id": "portfolio-cms",
+       "command": "npm",
+       "args": ["run", "dev"],
+       "cwd": "/mnt/c/WORK/WEBSITE/JxcobCreations/Portfolio-CMS"
+     },
+     {
+       "id": "portfolio-website",
+       "command": "npm",
+       "args": ["run", "dev"],
+       "cwd": "/mnt/c/WORK/WEBSITE/JxcobCreations/Portfolio-website"
+     }
+   ]
+   ```
+   (If Codex expects MCP-specific binaries, point to those instead, but keep the working directory paths.)
+
+3. In VS Code settings set `Codex › Shell: Path` to the shell you want Codex to use (PowerShell, WSL bash, etc.). Confirm the shell has Node/npm on its PATH.
+
+Manual Server Start (if auto-start fails)
+----------------------------------------
+1. Terminal 1: `cd Portfolio-CMS && npm run dev`
+2. Terminal 2: `cd Portfolio-website && npm run dev`
+3. In Codex command palette choose “Codex: Connect MCP” and select each running server. Some MCP servers print “MCP READY”; check logs if Codex can’t connect.
+
+Connectivity Check
+------------------
+- From Codex run `ls` in `/mnt/c/WORK/WEBSITE/JxcobCreations`. Successful output confirms workspace access.
+
+Playwright Browser Install
+--------------------------
+1. From `Portfolio-website/` run `npx playwright install chromium` (add `--with-deps` if prompted).
+2. When updating snapshots later, start the Next.js dev server first, then run `PLAYWRIGHT_SKIP_WEB_SERVER=1 npm run test:ui:update`.
+
+Validation Commands
+-------------------
+- Portfolio website: `npm run validate`
+- CMS: `npm run lint` (if configured) and any new smoke tests once they exist.
+
+Reference Files
+---------------
+- `ACTION_PLAN.txt` — roadmap with remaining tasks.
+- `CODEX_HANDOFF_PROMPT.txt` — prompt to feed the Codex extension for follow-up work.

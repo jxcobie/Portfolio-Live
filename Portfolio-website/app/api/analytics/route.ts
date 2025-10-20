@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-
-const CMS_URL = process.env.CMS_URL || 'http://localhost:1337';
+import { buildCmsUrl } from '@/lib/env';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
     // Forward analytics to CMS
-    const response = await fetch(`${CMS_URL}/api/analytics/track`, {
+    const response = await fetch(buildCmsUrl('/api/analytics/track'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

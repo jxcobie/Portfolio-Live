@@ -37,7 +37,9 @@ export default function ProjectNotFound() {
           .split('')
           .map((char) => {
             if (char === ' ') return ' ';
-            return Math.random() > 0.5 ? char : glitchChars[Math.floor(Math.random() * glitchChars.length)];
+            return Math.random() > 0.5
+              ? char
+              : glitchChars[Math.floor(Math.random() * glitchChars.length)];
           })
           .join('');
         setMessageGlitch(glitched);
@@ -169,9 +171,7 @@ export default function ProjectNotFound() {
             <span className="terminal-prompt">$</span>
             <span className="terminal-command">ls -la</span>
           </div>
-          <div className="terminal-output">
-            Try browsing all available projects instead
-          </div>
+          <div className="terminal-output">Try browsing all available projects instead</div>
         </motion.div>
       </motion.div>
 

@@ -86,8 +86,8 @@ Add to `Portfolio-CMS/server.js` (before other routes):
 
 ```javascript
 // Health check endpoint for Coolify
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 ```
 
@@ -109,14 +109,21 @@ app.get('/health', (req, res) => {
    - Health Check Path: `/health`
 
 5. **Environment Variables** (in Coolify UI):
+
    ```env
    NODE_ENV=production
-   PORT=3002
-   API_KEY=<generate-strong-random-key>
+   CMS_PORT=3002
+   SESSION_SECRET=<generate-strong-random-key>
    DATABASE_PATH=/app/data/cms_database.db
    UPLOAD_DIR=/app/uploads
    MAX_FILE_SIZE=5242880
    ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+   CMS_BOOTSTRAP_ADMIN_USER=admin
+   CMS_BOOTSTRAP_ADMIN_PASSWORD=<set-strong-password>
+   RATE_LIMIT_WINDOW_MINUTES=15
+   RATE_LIMIT_MAX_REQUESTS=500
+   RATE_LIMIT_AUTH_WINDOW_MINUTES=15
+   RATE_LIMIT_AUTH_REQUESTS=10
    ```
 
 6. **Persistent Volumes** (Important!):
@@ -235,7 +242,7 @@ Add `output: 'standalone'` to your Next.js config:
 
 ```typescript
 const nextConfig = {
-  output: 'standalone', // Required for Docker
+  output: "standalone", // Required for Docker
   // ... rest of your config
 };
 ```
@@ -277,6 +284,7 @@ README.md
    - `NEXT_PUBLIC_SITE_URL`: `https://yourdomain.com`
 
 5. **Environment Variables**:
+
    ```env
    NODE_ENV=production
    NEXT_PUBLIC_CMS_URL=https://api.yourdomain.com
@@ -321,6 +329,7 @@ Create a backup script in Coolify:
 1. **Go to CMS Resource** → **Scripts** tab
 
 2. **Add Backup Script**:
+
    ```bash
    #!/bin/bash
    docker exec <cms-container-id> npm run db:backup
@@ -340,11 +349,13 @@ Create a backup script in Coolify:
 ### Logs
 
 View logs in Coolify:
+
 ```
 Dashboard → Select Resource → Logs Tab
 ```
 
 Or via SSH:
+
 ```bash
 # CMS logs
 docker logs <cms-container-id> -f
@@ -412,6 +423,7 @@ Coolify handles SSL automatically with Let's Encrypt:
 ### Force HTTPS
 
 In Coolify domain settings:
+
 - Enable "Force HTTPS"
 - All HTTP requests will redirect to HTTPS
 
@@ -425,7 +437,7 @@ Add to `next.config.ts`:
 
 ```typescript
 const nextConfig = {
-  output: 'standalone',
+  output: "standalone",
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
@@ -443,8 +455,8 @@ const db = new sqlite3.Database(DATABASE_PATH, {
 });
 
 // Enable WAL mode for better concurrency
-db.run('PRAGMA journal_mode = WAL;');
-db.run('PRAGMA synchronous = NORMAL;');
+db.run("PRAGMA journal_mode = WAL;");
+db.run("PRAGMA synchronous = NORMAL;");
 ```
 
 ### CDN for Static Assets
@@ -463,16 +475,19 @@ Use Cloudflare in front of Coolify:
 ### CMS Container Won't Start
 
 **Check logs:**
+
 ```bash
 docker logs <cms-container-id>
 ```
 
 **Common issues:**
+
 - Missing environment variables
 - Port already in use
 - Database file permissions
 
 **Solution:**
+
 ```bash
 # Fix permissions
 docker exec -it <cms-container-id> chown -R node:node /app/data
@@ -481,12 +496,14 @@ docker exec -it <cms-container-id> chown -R node:node /app/data
 ### Website Can't Connect to CMS
 
 **Check:**
+
 1. ✅ CMS is running: `curl https://api.yourdomain.com/health`
 2. ✅ CORS origins include website domain
 3. ✅ API key matches in both services
 4. ✅ Firewall allows port 3002
 
 **Fix CORS:**
+
 ```env
 # In CMS environment variables
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
@@ -495,6 +512,7 @@ ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ### Build Fails
 
 **Check:**
+
 1. Node version matches (20.18.0)
 2. Dependencies install correctly
 3. Environment variables set properly
@@ -508,6 +526,7 @@ Dashboard → Resource → Builds → View Logs
 **Cause:** Persistent volumes not configured
 
 **Fix:**
+
 1. Stop container
 2. Add persistent volumes in Coolify
 3. Re-deploy
@@ -540,6 +559,7 @@ git push
 ### Database Backup & Restore
 
 **Backup:**
+
 ```bash
 # Via Coolify script (automated)
 # Or manually:
@@ -550,6 +570,7 @@ docker cp <cms-container-id>:/app/backups/cms_database_*.db ./local-backup.db
 ```
 
 **Restore:**
+
 ```bash
 # Upload backup to server
 docker cp ./local-backup.db <cms-container-id>:/app/data/cms_database.db
@@ -561,11 +582,13 @@ docker restart <cms-container-id>
 ### Monitor Resource Usage
 
 In Coolify Dashboard:
+
 - CPU should be < 50% average
 - Memory should be < 80%
 - Disk usage < 70%
 
 **If too high:**
+
 - Optimize database queries
 - Add indexes to database
 - Enable caching
@@ -644,6 +667,7 @@ SELECT * FROM analytics ORDER BY timestamp DESC LIMIT 10;
 ## 🎉 Deployment Complete!
 
 Your portfolio is now live on:
+
 - **Frontend**: https://yourdomain.com
 - **CMS API**: https://api.yourdomain.com
 
@@ -667,6 +691,7 @@ Your portfolio is now live on:
 ## 🆘 Support
 
 Need help?
+
 - Coolify Discord: https://coolify.io/discord
 - Email: hello@jxcobcreations.com
 

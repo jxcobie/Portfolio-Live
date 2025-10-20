@@ -1,0 +1,30 @@
+Portfolio & CMS Stabilization Plan
+==================================
+
+Context & Status (2025-02-15)
+-----------------------------
+- Phase 1 & 2 items are largely complete: CMS now seeds admins via env vars, uses helmet/cors/rate limiting, and the Next.js app fetches real CMS data with sanitisation.
+- Phase 3 partially done: shared design tokens created (`lib/ui/theme.ts`) and SectionHeader refactored, but broader UI audit still outstanding.
+- Playwright config and snapshot tests live in `Portfolio-website/playwright/`; browsers still need to be installed locally and baselines captured.
+- Full-repo Prettier run finished; `npm run validate` now passes except for legacy lint warnings (`app/api/portfolio/route.ts`, `lib/portfolio-data.ts`, `hooks/useAnalytics.ts` etc.).
+
+Phase 3 – UI/UX Standardisation (Next Actions)
+----------------------------------------------
+1. Migrate remaining bespoke CSS (e.g. `.home-page .section-header`, floating navbar) onto Tailwind utilities + design tokens for consistency.
+2. Audit shared components (`components/ui/*`, `components/shared/*`, `FloatingNavbar`) and document usage patterns in a short style guide (add to `Portfolio-website/README.md`).
+3. Run accessibility sweep (focus states, aria labels, contrasts) after the Tailwind refactors.
+
+Phase 4 – Tooling & Visual Regression
+-------------------------------------
+1. In `Portfolio-website/`, run `npx playwright install chromium` (and other browsers if desired), then start the dev server and execute `PLAYWRIGHT_SKIP_WEB_SERVER=1 npm run test:ui:update` to generate baseline snapshots.
+2. Commit the generated `playwright/__snapshots__` images and ensure `test-results/` stays ignored.
+3. Add a short “How to update screenshots” section to `Portfolio-website/README.md`.
+4. Resolve the lint warnings called out above. Prioritise typing `any` usage in `app/api/portfolio/route.ts` and `lib/portfolio-data.ts`. Suppress only when typings aren’t practical.
+5. Remove the duplicate lockfile (`Portfolio-website/package-lock.json`) once dependencies are reconciled, so lint no longer warns about multiple lockfiles.
+
+Phase 5 – Continuous Hardening (Follow-on)
+-----------------------------------------
+1. Add automated CMS smoke tests (Supertest or Playwright API) covering auth, projects CRUD, and uploads.
+2. Integrate an error monitoring service (e.g. Sentry) in both the CMS and Next.js app.
+3. Schedule regular DB backups and vacuum scripts; document the process under `Portfolio-CMS/README.md`.
+4. Plan quarterly reviews for dependency updates + security patches; record the cadence in repo docs.

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-
-const CMS_URL = process.env.CMS_URL || 'http://localhost:1337';
+import { buildCmsUrl } from '@/lib/env';
 
 export async function GET() {
   try {
-    const response = await fetch(`${CMS_URL}/api/projects/featured`, {
+    const response = await fetch(buildCmsUrl('/api/projects/featured'), {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',

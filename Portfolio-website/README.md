@@ -23,7 +23,8 @@ Create `.env.local` file:
 
 ```env
 # CMS API Configuration
-NEXT_PUBLIC_CMS_URL=http://localhost:3002
+CMS_INTERNAL_URL=http://localhost:1337
+NEXT_PUBLIC_CMS_URL=http://localhost:1337
 CMS_API_KEY=your-api-key-here
 
 # Site Configuration
@@ -57,6 +58,18 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+### 4. Visual Regression Testing
+
+Playwright is configured for snapshot testing. The runner will automatically start the dev server unless you set `PLAYWRIGHT_SKIP_WEB_SERVER=1`.
+
+```bash
+# Run visual regression suite
+npm run test:ui
+
+# Update baseline snapshots after intentional UI changes
+npm run test:ui:update
+```
 
 ## Learn More
 

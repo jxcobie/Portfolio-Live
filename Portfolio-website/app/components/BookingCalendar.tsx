@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Mail, User, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Mail, User, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
 
 interface TimeSlot {
   time: string;
@@ -41,10 +41,13 @@ export default function BookingCalendar() {
   const [error, setError] = useState<string | null>(null);
 
   const meetingTypes = [
-    { value: '30min', label: '30 Minutes', duration: 30 },
-    { value: '60min', label: '1 Hour', duration: 60 },
-    { value: '90min', label: '1.5 Hours', duration: 90 },
+    { value: '30min', label: '30 MIN SESSION', duration: 30 },
+    { value: '60min', label: '60 MIN SESSION', duration: 60 },
+    { value: '90min', label: '90 MIN SESSION', duration: 90 },
   ];
+
+  // Get CMS URL with fallback
+  const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'http://localhost:1337';
 
   // Fetch availability when date or meeting type changes
   useEffect(() => {
@@ -60,10 +63,10 @@ export default function BookingCalendar() {
 
     try {
       const dateStr = date.toISOString().split('T')[0];
-      const duration = meetingTypes.find(t => t.value === formData.meetingType)?.duration || 30;
+      const duration = meetingTypes.find((t) => t.value === formData.meetingType)?.duration || 30;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_CMS_URL}/api/bookings/availability/${dateStr}?duration=${duration}`
+        `${CMS_URL}/api/bookings/availability/${dateStr}?duration=${duration}`
       );
 
       if (!response.ok) throw new Error('Failed to fetch availability');
@@ -72,7 +75,7 @@ export default function BookingCalendar() {
       setAvailability(data);
     } catch (err) {
       console.error('Error fetching availability:', err);
-      setError('Failed to load availability');
+      setError('❌ CONNECTION_FAILED: Unable to reach booking server');
     } finally {
       setLoadingAvailability(false);
     }
@@ -116,10 +119,10 @@ export default function BookingCalendar() {
         ...formData,
         date: selectedDate.toISOString().split('T')[0],
         time: selectedTime,
-        duration: meetingTypes.find(t => t.value === formData.meetingType)?.duration || 30,
+        duration: meetingTypes.find((t) => t.value === formData.meetingType)?.duration || 30,
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CMS_URL}/api/bookings`, {
+      const response = await fetch(`${CMS_URL}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingData),
@@ -144,7 +147,7 @@ export default function BookingCalendar() {
         });
       }, 5000);
     } catch (err: any) {
-      setError(err.message);
+      setError(`❌ BOOKING_FAILED: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -155,319 +158,369 @@ export default function BookingCalendar() {
   today.setHours(0, 0, 0, 0);
 
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'JANUARY',
+    'FEBRUARY',
+    'MARCH',
+    'APRIL',
+    'MAY',
+    'JUNE',
+    'JULY',
+    'AUGUST',
+    'SEPTEMBER',
+    'OCTOBER',
+    'NOVEMBER',
+    'DECEMBER',
   ];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   if (submitted) {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
-          <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
-          <p className="text-slate-300 mb-4">
-            Your meeting has been scheduled for {selectedDate?.toLocaleDateString()} at {selectedTime}
-          </p>
-          <p className="text-slate-400">A confirmation email has been sent to {formData.email}</p>
+      <section className="content-section flex min-h-screen items-center justify-center">
+        <div className="w-full max-w-2xl">
+          <div className="glowing-border bg-dark-500/80 rounded-lg p-12 text-center backdrop-blur-sm">
+            <div className="text-success mb-6 flex justify-center">
+              <CheckCircle2 className="h-20 w-20 animate-pulse" />
+            </div>
+            <h2 className="text-success mb-4 font-mono text-3xl font-bold">
+              [ BOOKING_CONFIRMED ]
+            </h2>
+            <div className="text-cyber-cyan space-y-3 font-mono">
+              <p>
+                <span className="text-gray-400">DATE:</span> {selectedDate?.toLocaleDateString()}
+              </p>
+              <p>
+                <span className="text-gray-400">TIME:</span> {selectedTime}
+              </p>
+              <p>
+                <span className="text-gray-400">EMAIL:</span> {formData.email}
+              </p>
+            </div>
+            <div className="bg-success/10 border-success/30 mt-8 rounded border p-4">
+              <p className="text-success font-mono text-sm">
+                ✓ Confirmation email sent to your inbox
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+    <section className="px-4 py-12 sm:px-6 md:py-20 lg:px-8">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500/20 to-blue-500/20 p-8 border-b border-slate-800">
-          <h1 className="text-3xl font-bold text-white mb-2">Schedule a Meeting</h1>
-          <p className="text-slate-300">Choose your preferred date and time</p>
+        <div className="mb-12 text-center md:mb-16">
+          <div className="inline-block">
+            <div className="mb-6 flex items-center justify-center gap-4">
+              <Zap className="text-cyber-cyan h-10 w-10 animate-pulse md:h-12 md:w-12" />
+              <h1 className="text-cyber-cyan font-mono text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
+                [ BOOK_SESSION ]
+              </h1>
+              <Zap className="text-cyber-magenta h-10 w-10 animate-pulse md:h-12 md:w-12" />
+            </div>
+            <p className="font-mono text-sm text-gray-400 md:text-base">
+              &gt; Initialize meeting protocol...
+            </p>
+          </div>
         </div>
 
+        {/* Error Banner */}
         {error && (
-          <div className="mx-8 mt-8 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <p className="text-red-300">{error}</p>
+          <div className="mx-auto mb-8 max-w-4xl">
+            <div className="bg-error/10 border-error/50 flex items-start gap-3 rounded-lg border-2 p-4">
+              <AlertCircle className="text-error mt-0.5 h-6 w-6 flex-shrink-0" />
+              <div className="text-error font-mono text-sm">{error}</div>
+            </div>
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-8 p-8">
-          {/* Left Column - Calendar & Availability */}
-          <div className="space-y-6">
-            {/* Meeting Type Selector */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
-                Meeting Duration
-              </label>
-              <div className="grid gap-3">
-                {meetingTypes.map(type => (
-                  <button
-                    key={type.value}
-                    onClick={() => setFormData({ ...formData, meetingType: type.value })}
-                    className={`p-4 rounded-xl border transition-all text-left ${
-                      formData.meetingType === type.value
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                        : 'bg-slate-800/30 border-slate-700 text-slate-300 hover:border-slate-600'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{type.label}</div>
-                        <div className="text-sm opacity-75">{type.duration} minutes</div>
-                      </div>
-                      <Clock className="w-5 h-5" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Calendar */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
-                    )
-                  }
-                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white transition"
-                >
-                  ←
-                </button>
-                <h3 className="text-lg font-semibold text-white">
-                  {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
-                </h3>
-                <button
-                  onClick={() =>
-                    setCurrentMonth(
-                      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
-                    )
-                  }
-                  className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white transition"
-                >
-                  →
-                </button>
-              </div>
-
-              <div className="grid grid-cols-7 gap-2">
-                {dayNames.map(day => (
-                  <div
-                    key={day}
-                    className="text-center text-xs font-medium text-slate-400 py-2"
-                  >
-                    {day}
-                  </div>
-                ))}
-
-                {days.map((date, idx) => {
-                  const isAvailable = isDateAvailable(date);
-                  const isSelected =
-                    selectedDate &&
-                    date &&
-                    date.toDateString() === selectedDate.toDateString();
-
-                  return (
+        {/* Main Content */}
+        <div className="glowing-border bg-dark-500/50 overflow-hidden rounded-xl shadow-2xl backdrop-blur-sm">
+          <div className="divide-cyber-cyan/20 grid gap-0 divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            {/* Left Column - Calendar & Time Selection */}
+            <div className="space-y-8 p-6 sm:p-8 lg:p-10">
+              {/* Meeting Type Selector */}
+              <div>
+                <label className="text-cyber-cyan mb-4 block font-mono text-sm font-semibold">
+                  [ SELECT_DURATION ]
+                </label>
+                <div className="space-y-3">
+                  {meetingTypes.map((type) => (
                     <button
-                      key={idx}
-                      onClick={() => date && isAvailable && setSelectedDate(date)}
-                      disabled={!isAvailable}
-                      className={`aspect-square p-2 rounded-lg text-sm font-medium transition-all ${
-                        !date
-                          ? 'invisible'
-                          : !isAvailable
-                          ? 'bg-slate-800/20 text-slate-600 cursor-not-allowed'
-                          : isSelected
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                          : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 border border-slate-700 hover:border-slate-600'
+                      key={type.value}
+                      onClick={() => setFormData({ ...formData, meetingType: type.value })}
+                      className={`w-full rounded p-4 font-mono text-sm transition-all ${
+                        formData.meetingType === type.value
+                          ? 'bg-cyber-cyan/20 border-cyber-cyan text-cyber-cyan shadow-glow border-2'
+                          : 'bg-dark-400/50 hover:border-cyber-cyan/50 border border-gray-700 text-gray-400'
                       }`}
                     >
-                      {date?.getDate()}
+                      <div className="flex items-center justify-between">
+                        <span>[ {type.label} ]</span>
+                        <Clock className="h-5 w-5" />
+                      </div>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Availability Display */}
-            {selectedDate && (
-              <div className="space-y-4">
-                <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-                  <h4 className="text-sm font-semibold text-white mb-3">
-                    {selectedDate.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+              {/* Calendar */}
+              <div>
+                <div className="mb-6 flex items-center justify-between">
+                  <button
+                    onClick={() =>
+                      setCurrentMonth(
+                        new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
+                      )
+                    }
+                    className="bg-dark-400 border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/20 rounded border px-4 py-2 font-mono transition-all"
+                  >
+                    ◄
+                  </button>
+                  <h3 className="font-mono text-xl font-bold text-white">
+                    {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setCurrentMonth(
+                        new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+                      )
+                    }
+                    className="bg-dark-400 border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/20 rounded border px-4 py-2 font-mono transition-all"
+                  >
+                    ►
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {dayNames.map((day) => (
+                    <div
+                      key={day}
+                      className="text-cyber-magenta py-2 text-center font-mono text-xs font-bold"
+                    >
+                      {day}
+                    </div>
+                  ))}
+
+                  {days.map((date, idx) => {
+                    const isAvailable = isDateAvailable(date);
+                    const isSelected =
+                      selectedDate && date && date.toDateString() === selectedDate.toDateString();
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => date && isAvailable && setSelectedDate(date)}
+                        disabled={!isAvailable}
+                        className={`aspect-square rounded p-2 font-mono text-sm font-bold transition-all ${
+                          !date
+                            ? 'invisible'
+                            : !isAvailable
+                              ? 'bg-dark-400/30 cursor-not-allowed text-gray-700'
+                              : isSelected
+                                ? 'bg-cyber-cyan shadow-glow border-cyber-cyan border-2 text-black'
+                                : 'bg-dark-400/50 hover:bg-cyber-cyan/20 hover:border-cyber-cyan border border-gray-700 text-gray-300'
+                        }`}
+                      >
+                        {date?.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Availability Display */}
+              {selectedDate && (
+                <div className="border-cyber-cyan/30 bg-dark-400/30 rounded-lg border-2 p-6">
+                  <h4 className="text-cyber-cyan mb-4 font-mono text-sm font-bold">
+                    [{' '}
+                    {selectedDate
+                      .toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })
+                      .toUpperCase()}{' '}
+                    ]
                   </h4>
 
                   {loadingAvailability ? (
-                    <div className="text-center py-4">
-                      <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
-                      <p className="text-slate-400 text-sm mt-2">Loading availability...</p>
+                    <div className="py-8 text-center">
+                      <div className="border-cyber-cyan/30 border-t-cyber-cyan mx-auto h-12 w-12 animate-spin rounded-full border-4"></div>
+                      <p className="mt-4 font-mono text-sm text-gray-400">LOADING_SLOTS...</p>
                     </div>
                   ) : availability && !availability.isAvailable ? (
-                    <div className="text-center py-4">
-                      <AlertCircle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                      <p className="text-slate-300">No availability on this day</p>
+                    <div className="py-8 text-center">
+                      <AlertCircle className="text-warning mx-auto mb-3 h-12 w-12" />
+                      <p className="font-mono text-gray-300">[ NO_AVAILABILITY ]</p>
                       {availability.reason && (
-                        <p className="text-slate-400 text-sm mt-1">{availability.reason}</p>
+                        <p className="mt-2 font-mono text-sm text-gray-500">
+                          {availability.reason}
+                        </p>
                       )}
                     </div>
                   ) : availability && availability.workingHours.length > 0 ? (
-                    <div className="space-y-3">
-                      <div className="text-sm text-slate-400">
-                        <strong className="text-slate-300">Working Hours:</strong>
+                    <div className="space-y-4">
+                      <div className="font-mono text-sm">
+                        <div className="text-cyber-magenta mb-2">WORKING_HOURS:</div>
                         {availability.workingHours.map((wh, idx) => (
-                          <div key={idx} className="ml-2">
-                            {wh.start} - {wh.end}
+                          <div key={idx} className="ml-4 text-gray-400">
+                            &gt; {wh.start} - {wh.end}
                           </div>
                         ))}
                       </div>
-                      <div className="text-sm text-slate-400">
-                        <strong className="text-slate-300">Available Slots:</strong>{' '}
-                        {availability.availableSlots.length} slots
+                      <div className="font-mono text-sm">
+                        <span className="text-cyber-magenta">SLOTS_AVAILABLE:</span>{' '}
+                        <span className="text-cyber-cyan">
+                          {availability.availableSlots.length}
+                        </span>
                       </div>
                       {availability.bookedCount > 0 && (
-                        <div className="text-sm text-slate-400">
-                          Already booked: {availability.bookedCount} slots
+                        <div className="font-mono text-sm">
+                          <span className="text-gray-500">BOOKED:</span> {availability.bookedCount}
                         </div>
                       )}
                     </div>
                   ) : null}
                 </div>
+              )}
 
-                {/* Time Slots */}
-                {availability && availability.availableSlots.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Select Time
-                    </h4>
-                    <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                      {availability.availableSlots.map(time => (
-                        <button
-                          key={time}
-                          onClick={() => setSelectedTime(time)}
-                          className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                            selectedTime === time
-                              ? 'bg-blue-500 text-white shadow-lg'
-                              : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right Column - Form */}
-          <div>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  <User className="w-4 h-4 inline mr-2" />
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                  placeholder="John Doe"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                  placeholder="john@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none"
-                  placeholder="+1 (555) 000-0000"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Meeting Notes (Optional)
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none"
-                  placeholder="Tell me about your project..."
-                />
-              </div>
-
-              {selectedDate && selectedTime && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                  <div className="text-sm text-blue-300 font-medium mb-2">
-                    Meeting Summary:
-                  </div>
-                  <div className="text-white space-y-1 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-blue-400" />
-                      {selectedDate.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-blue-400" />
-                      {selectedTime} (
-                      {meetingTypes.find(t => t.value === formData.meetingType)?.duration}{' '}
-                      minutes)
-                    </div>
+              {/* Time Slots */}
+              {availability && availability.availableSlots.length > 0 && (
+                <div>
+                  <h4 className="text-cyber-cyan mb-4 flex items-center gap-2 font-mono text-sm font-bold">
+                    <Clock className="h-5 w-5" />[ SELECT_TIME ]
+                  </h4>
+                  <div className="custom-scrollbar grid max-h-60 grid-cols-3 gap-2 overflow-y-auto">
+                    {availability.availableSlots.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        className={`rounded p-3 font-mono text-sm font-bold transition-all ${
+                          selectedTime === time
+                            ? 'bg-cyber-magenta shadow-glow-magenta border-cyber-magenta border-2 text-white'
+                            : 'bg-dark-400/50 hover:bg-cyber-magenta/20 hover:border-cyber-magenta border border-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
+            </div>
 
-              <button
-                type="submit"
-                disabled={!selectedDate || !selectedTime || loading}
-                className="w-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white font-semibold py-4 rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Scheduling...
-                  </span>
-                ) : (
-                  'Confirm Booking'
+            {/* Right Column - Form */}
+            <div className="p-6 sm:p-8 lg:p-10">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="text-cyber-cyan mb-2 block font-mono text-sm font-semibold">
+                    <User className="mr-2 inline h-4 w-4" />[ FULL_NAME ]
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="bg-dark-400/50 focus:border-cyber-cyan focus:shadow-glow w-full rounded border border-gray-700 px-4 py-3 font-mono text-white transition-all focus:outline-none"
+                    placeholder="John_Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-cyber-cyan mb-2 block font-mono text-sm font-semibold">
+                    <Mail className="mr-2 inline h-4 w-4" />[ EMAIL ]
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="bg-dark-400/50 focus:border-cyber-cyan focus:shadow-glow w-full rounded border border-gray-700 px-4 py-3 font-mono text-white transition-all focus:outline-none"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-cyber-cyan mb-2 block font-mono text-sm font-semibold">
+                    [ PHONE ] <span className="text-xs text-gray-500">(OPTIONAL)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="bg-dark-400/50 focus:border-cyber-cyan focus:shadow-glow w-full rounded border border-gray-700 px-4 py-3 font-mono text-white transition-all focus:outline-none"
+                    placeholder="+1_555_000_0000"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-cyber-cyan mb-2 block font-mono text-sm font-semibold">
+                    [ MESSAGE ] <span className="text-xs text-gray-500">(OPTIONAL)</span>
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={4}
+                    className="bg-dark-400/50 focus:border-cyber-cyan focus:shadow-glow custom-scrollbar w-full resize-none rounded border border-gray-700 px-4 py-3 font-mono text-white transition-all focus:outline-none"
+                    placeholder="> Tell me about your project..."
+                  />
+                </div>
+
+                {selectedDate && selectedTime && (
+                  <div className="bg-cyber-blue/10 border-cyber-blue/50 rounded-lg border-2 p-4">
+                    <div className="text-cyber-blue mb-3 font-mono text-sm font-bold">
+                      [ BOOKING_SUMMARY ]
+                    </div>
+                    <div className="space-y-2 font-mono text-sm text-white">
+                      <div className="flex items-start gap-2">
+                        <Calendar className="text-cyber-blue mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>
+                          {selectedDate.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="text-cyber-blue h-4 w-4" />
+                        {selectedTime} (
+                        {meetingTypes.find((t) => t.value === formData.meetingType)?.duration} MIN)
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </form>
+
+                <button
+                  type="submit"
+                  disabled={!selectedDate || !selectedTime || loading}
+                  className="from-cyber-cyan to-cyber-blue hover:shadow-glow w-full rounded-lg bg-gradient-to-r py-4 font-mono font-bold text-black transition-all disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:shadow-none"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="h-5 w-5 animate-spin rounded-full border-3 border-black/30 border-t-black" />
+                      PROCESSING...
+                    </span>
+                  ) : (
+                    '[ CONFIRM_BOOKING ]'
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
+
+        {/* Info Footer */}
+        <div className="mt-12 text-center">
+          <p className="font-mono text-sm text-gray-500 md:text-base">
+            &gt; Booking system online | Response time: {'<'}5 minutes
+          </p>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

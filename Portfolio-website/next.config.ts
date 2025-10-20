@@ -210,8 +210,9 @@ const nextConfig: NextConfig = {
   experimental: {
     /**
      * Optimize CSS extraction and minification
+     * DISABLED: Causes "self is not defined" error during build
      */
-    optimizeCss: true,
+    // optimizeCss: true,
 
     /**
      * Enable optimized package imports

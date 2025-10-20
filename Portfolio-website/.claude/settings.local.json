@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npx create-strapi-app:*)",
+      "Bash(npm install express cors dotenv multer)",
+      "Bash(npm start)",
+      "Bash(npm run cms:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node server.js)",
+      "Bash(tasklist)",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": ["D:\\D\\work\\ORGANIZED WORK\\WEB PORTFOLIO\\Pages\\YoutubeMP4"]
+  }
+}

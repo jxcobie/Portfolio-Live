@@ -15,10 +15,7 @@ import {
 } from '@/lib/portfolio-validation';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rate-limit';
 import { apiLogger } from '@/lib/api-logger';
-import {
-  PortfolioData,
-  ValidationError,
-} from '@/app/types/portfolio';
+import { PortfolioData, ValidationError } from '@/app/types/portfolio';
 
 /**
  * Portfolio API Response Type
@@ -140,7 +137,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const requestId = apiLogger.logRequest(request);
 
   try {
-
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'GET');
     const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
@@ -259,7 +255,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   const requestId = apiLogger.logRequest(request);
 
   try {
-
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'PUT');
     const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
@@ -371,7 +366,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const requestId = apiLogger.logRequest(request);
 
   try {
-
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'POST');
     const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);
@@ -496,7 +490,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const requestId = apiLogger.logRequest(request);
 
   try {
-
     // Check rate limit
     const rateLimitResult = checkRateLimit(request, 'DELETE');
     const rateLimitHeaders = getRateLimitHeaders(rateLimitResult);

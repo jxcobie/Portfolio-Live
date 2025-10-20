@@ -268,16 +268,26 @@ export default function ProjectsPage() {
         <div className={styles.cardBorderEffect}></div>
 
         {/* Image Skeleton */}
-        <div className={styles.projectImageContainer} style={{
-          background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-          backgroundSize: '200% 100%',
-          animation: 'shimmer 2s infinite',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animationDelay: `${index * 0.1}s`
-        }}>
-          <span style={{ color: 'rgba(0, 255, 136, 0.4)', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+        <div
+          className={styles.projectImageContainer}
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 2s infinite',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animationDelay: `${index * 0.1}s`,
+          }}
+        >
+          <span
+            style={{
+              color: 'rgba(0, 255, 136, 0.4)',
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+            }}
+          >
             [LOADING_IMAGE...]
           </span>
         </div>
@@ -285,74 +295,93 @@ export default function ProjectsPage() {
         {/* Content Skeleton */}
         <div className={styles.projectContent}>
           {/* Status Badge Skeleton */}
-          <div style={{
-            height: '1.5rem',
-            width: '7rem',
-            background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 2s infinite',
-            marginBottom: '0.75rem',
-            border: '1px solid rgba(0, 255, 136, 0.2)',
-            animationDelay: `${index * 0.1 + 0.1}s`
-          }}></div>
+          <div
+            style={{
+              height: '1.5rem',
+              width: '7rem',
+              background:
+                'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              marginBottom: '0.75rem',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              animationDelay: `${index * 0.1 + 0.1}s`,
+            }}
+          ></div>
 
           {/* Title Skeleton */}
-          <div style={{
-            height: '1.75rem',
-            width: '80%',
-            background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 2s infinite',
-            marginBottom: '0.75rem',
-            border: '1px solid rgba(0, 255, 136, 0.2)',
-            animationDelay: `${index * 0.1 + 0.2}s`
-          }}></div>
+          <div
+            style={{
+              height: '1.75rem',
+              width: '80%',
+              background:
+                'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 2s infinite',
+              marginBottom: '0.75rem',
+              border: '1px solid rgba(0, 255, 136, 0.2)',
+              animationDelay: `${index * 0.1 + 0.2}s`,
+            }}
+          ></div>
 
           {/* Description Skeleton */}
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{
-              height: '1rem',
-              width: '100%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              marginBottom: '0.5rem',
-              border: '1px solid rgba(0, 255, 136, 0.2)',
-              animationDelay: `${index * 0.1 + 0.3}s`
-            }}></div>
-            <div style={{
-              height: '1rem',
-              width: '90%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              marginBottom: '0.5rem',
-              border: '1px solid rgba(0, 255, 136, 0.2)',
-              animationDelay: `${index * 0.1 + 0.4}s`
-            }}></div>
-            <div style={{
-              height: '1rem',
-              width: '70%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              border: '1px solid rgba(0, 255, 136, 0.2)',
-              animationDelay: `${index * 0.1 + 0.5}s`
-            }}></div>
+            <div
+              style={{
+                height: '1rem',
+                width: '100%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                marginBottom: '0.5rem',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+                animationDelay: `${index * 0.1 + 0.3}s`,
+              }}
+            ></div>
+            <div
+              style={{
+                height: '1rem',
+                width: '90%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                marginBottom: '0.5rem',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+                animationDelay: `${index * 0.1 + 0.4}s`,
+              }}
+            ></div>
+            <div
+              style={{
+                height: '1rem',
+                width: '70%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+                animationDelay: `${index * 0.1 + 0.5}s`,
+              }}
+            ></div>
           </div>
 
           {/* Tech Stack Skeleton */}
           <div className={styles.techStack}>
             {[...Array(4)].map((_, i) => (
-              <div key={i} style={{
-                height: '1.5rem',
-                width: '4rem',
-                background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 2s infinite',
-                border: '1px solid rgba(0, 255, 136, 0.2)',
-                animationDelay: `${index * 0.1 + 0.6 + i * 0.05}s`
-              }}></div>
+              <div
+                key={i}
+                style={{
+                  height: '1.5rem',
+                  width: '4rem',
+                  background:
+                    'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 2s infinite',
+                  border: '1px solid rgba(0, 255, 136, 0.2)',
+                  animationDelay: `${index * 0.1 + 0.6 + i * 0.05}s`,
+                }}
+              ></div>
             ))}
           </div>
         </div>
@@ -386,24 +415,30 @@ export default function ProjectsPage() {
             style={{ opacity: 0.6 }}
           >
             <div className={styles.headerTag}>[PROJECT_ARCHIVE]</div>
-            <div style={{
-              height: '3rem',
-              width: '60%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              marginBottom: '1rem',
-              border: '1px solid rgba(0, 255, 136, 0.2)'
-            }}></div>
+            <div
+              style={{
+                height: '3rem',
+                width: '60%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                marginBottom: '1rem',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+              }}
+            ></div>
             <div className={styles.headerLine}></div>
-            <div style={{
-              height: '1.5rem',
-              width: '80%',
-              background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite',
-              border: '1px solid rgba(0, 255, 136, 0.2)'
-            }}></div>
+            <div
+              style={{
+                height: '1.5rem',
+                width: '80%',
+                background:
+                  'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer 2s infinite',
+                border: '1px solid rgba(0, 255, 136, 0.2)',
+              }}
+            ></div>
           </motion.div>
         </header>
 
@@ -411,15 +446,19 @@ export default function ProjectsPage() {
         <section className={styles.filtersSection}>
           <div className={styles.filtersContainer}>
             {[...Array(4)].map((_, i) => (
-              <div key={i} style={{
-                height: '2.5rem',
-                width: '8rem',
-                background: 'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 2s infinite',
-                border: '1px solid rgba(0, 255, 136, 0.2)',
-                animationDelay: `${i * 0.1}s`
-              }}></div>
+              <div
+                key={i}
+                style={{
+                  height: '2.5rem',
+                  width: '8rem',
+                  background:
+                    'linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.2) 50%, rgba(0, 255, 136, 0.1) 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 2s infinite',
+                  border: '1px solid rgba(0, 255, 136, 0.2)',
+                  animationDelay: `${i * 0.1}s`,
+                }}
+              ></div>
             ))}
           </div>
         </section>
@@ -434,13 +473,15 @@ export default function ProjectsPage() {
         </main>
 
         {/* Loading Message */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '2rem',
-          fontFamily: 'monospace',
-          color: 'rgba(0, 255, 136, 0.7)',
-          fontSize: '0.875rem'
-        }}>
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '2rem',
+            fontFamily: 'monospace',
+            color: 'rgba(0, 255, 136, 0.7)',
+            fontSize: '0.875rem',
+          }}
+        >
           <motion.span
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -451,8 +492,12 @@ export default function ProjectsPage() {
 
         <style jsx>{`
           @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            0% {
+              background-position: -200% 0;
+            }
+            100% {
+              background-position: 200% 0;
+            }
           }
         `}</style>
       </div>

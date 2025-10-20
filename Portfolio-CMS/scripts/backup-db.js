@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const fs = require("fs");
+const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
 
 // Paths
-const dbPath = path.join(__dirname, '..', 'cms_database.db');
-const backupsDir = path.join(__dirname, '..', 'backups');
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+const dbPath = path.join(__dirname, "..", "cms_database.db");
+const backupsDir = path.join(__dirname, "..", "backups");
+const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
 const backupPath = path.join(backupsDir, `backup_${timestamp}.db`);
 
 // Create backups directory if it doesn't exist
@@ -13,28 +13,28 @@ if (!fs.existsSync(backupsDir)) {
   fs.mkdirSync(backupsDir, { recursive: true });
 }
 
-console.log('🔄 Starting database backup...');
+console.log("🔄 Starting database backup...");
 console.log(`📁 Source: ${dbPath}`);
 console.log(`📦 Destination: ${backupPath}`);
 
 // Copy database file
 fs.copyFile(dbPath, backupPath, (err) => {
   if (err) {
-    console.error('❌ Backup failed:', err);
+    console.error("❌ Backup failed:", err);
     process.exit(1);
   }
 
-  console.log('✅ Database backed up successfully!');
+  console.log("✅ Database backed up successfully!");
 
   // Clean up old backups (keep last 10)
   fs.readdir(backupsDir, (err, files) => {
     if (err) {
-      console.error('Error reading backups directory:', err);
+      console.error("Error reading backups directory:", err);
       return;
     }
 
     const backupFiles = files
-      .filter((f) => f.startsWith('backup_') && f.endsWith('.db'))
+      .filter((f) => f.startsWith("backup_") && f.endsWith(".db"))
       .sort()
       .reverse();
 

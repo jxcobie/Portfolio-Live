@@ -193,59 +193,8 @@ const ProjectsSection = memo(() => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load projects';
       setError(errorMessage);
+      setProjects([]);
       console.error('Error fetching projects:', err);
-
-      // Fallback to hardcoded data if API fails
-      setProjects([
-        {
-          id: 'ecommerce',
-          title: 'E-Commerce Automation Suite',
-          slug: 'ecommerce-automation-suite',
-          description: 'Full-stack platform with automated inventory and order processing.',
-          technologies: [
-            { id: 1, name: 'Next.js' },
-            { id: 2, name: 'PostgreSQL' },
-            { id: 3, name: 'n8n' },
-            { id: 4, name: 'Stripe' },
-          ],
-          status: 'Deployed',
-          featured: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: 'crm',
-          title: 'CRM Integration Platform',
-          slug: 'crm-integration-platform',
-          description: 'Custom CRM with automated lead scoring and multi-platform sync.',
-          technologies: [
-            { id: 1, name: 'React' },
-            { id: 2, name: 'Node.js' },
-            { id: 3, name: 'MongoDB' },
-            { id: 4, name: 'HubSpot' },
-          ],
-          status: 'Active',
-          featured: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: 'social',
-          title: 'Social Media Dashboard',
-          slug: 'social-media-dashboard',
-          description: 'Multi-account management with automated posting and analytics.',
-          technologies: [
-            { id: 1, name: 'React' },
-            { id: 2, name: 'Express' },
-            { id: 3, name: 'n8n' },
-            { id: 4, name: 'Chart.js' },
-          ],
-          status: 'In Dev',
-          featured: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]);
     } finally {
       setLoading(false);
     }

@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function BookingPage() {
   return (
-    <main className="min-h-screen bg-slate-950 py-20">
+    <main className="min-h-screen" style={{ background: 'var(--dark-bg)' }}>
       <BookingCalendar />
     </main>
   );

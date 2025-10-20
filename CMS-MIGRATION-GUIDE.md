@@ -5,6 +5,7 @@ The Portfolio CMS has been extracted into its own independent directory for bett
 ## What Changed
 
 ### Before (Monorepo Structure)
+
 ```
 JxcobCreations/
 ├── Portfolio-website/
@@ -15,6 +16,7 @@ JxcobCreations/
 ```
 
 ### After (Separate Repositories)
+
 ```
 JxcobCreations/
 ├── Portfolio-website/    ← Frontend only
@@ -88,7 +90,8 @@ Create/update `.env.local` in Portfolio-website:
 
 ```env
 # CMS API Configuration
-NEXT_PUBLIC_CMS_URL=http://localhost:3002
+CMS_INTERNAL_URL=http://localhost:1337
+NEXT_PUBLIC_CMS_URL=http://localhost:1337
 CMS_API_KEY=your-api-key-here
 
 # Site Configuration
@@ -98,12 +101,14 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ### Step 6: Start Both Services
 
 **Terminal 1 (CMS):**
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations\Portfolio-CMS
 npm run dev
 ```
 
 **Terminal 2 (Website):**
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations\Portfolio-website
 npm run dev
@@ -114,11 +119,13 @@ npm run dev
 ### Portfolio-website Changes
 
 ✅ **Removed:**
+
 - `cms/` directory
 - CMS-related npm scripts: `cms`, `cms:dev`, `db:push`, `db:seed`, `dev:all`
 - CMS dependencies: `concurrently`, `nodemon`
 
 ✅ **Updated:**
+
 - `.gitignore` - CMS directory now ignored
 - `package.json` - Removed CMS scripts
 - `README.md` - Updated documentation
@@ -126,6 +133,7 @@ npm run dev
 ### Portfolio-CMS (New Independent Project)
 
 ✅ **Added:**
+
 - Comprehensive `README.md` with full documentation
 - `.gitignore` for CMS-specific files
 - Proper project structure as standalone application
@@ -133,26 +141,31 @@ npm run dev
 ## Benefits of Separation
 
 ### 1. **Independent Deployment**
+
 - Deploy CMS and website separately
 - Scale them independently
 - Different hosting providers if needed
 
 ### 2. **Cleaner Codebase**
+
 - No mixing of frontend and backend code
 - Separate dependency management
 - Easier to maintain and debug
 
 ### 3. **Better Version Control**
+
 - Separate git repositories (optional)
 - Independent version numbers
 - Clearer commit history
 
 ### 4. **Security**
+
 - CMS can be on a private network
 - Website on public CDN
 - Better API key management
 
 ### 5. **Development Experience**
+
 - Run only what you need
 - Faster builds (no CMS in frontend build)
 - Clear separation of concerns
@@ -160,6 +173,7 @@ npm run dev
 ## Git Repository Setup (Optional)
 
 ### Option 1: Keep Both in Same Repo (Current)
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations
 git add .
@@ -170,6 +184,7 @@ git push
 ### Option 2: Separate Git Repositories
 
 **Portfolio-website:**
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations\Portfolio-website
 git add .
@@ -178,6 +193,7 @@ git push
 ```
 
 **Portfolio-CMS:**
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations\Portfolio-CMS
 git init
@@ -194,6 +210,7 @@ git push -u origin main
 **Problem**: "Device or resource busy" error
 
 **Solution**:
+
 1. Stop the CMS server (Ctrl+C)
 2. Close VS Code or any IDE with the folder open
 3. Open Task Manager and end any Node.js processes
@@ -204,6 +221,7 @@ git push -u origin main
 **Problem**: Port 3002 already in use
 
 **Solution**:
+
 ```bash
 # Windows
 netstat -ano | findstr :3002
@@ -218,6 +236,7 @@ PORT=3003
 **Problem**: "Failed to fetch" errors
 
 **Solution**:
+
 1. Ensure CMS is running: `http://localhost:3002`
 2. Check `.env.local` has correct `NEXT_PUBLIC_CMS_URL`
 3. Check CORS settings in CMS `.env`
@@ -227,6 +246,7 @@ PORT=3003
 **Problem**: "SQLITE_CANTOPEN" error
 
 **Solution**:
+
 ```bash
 cd C:\WORK\WEBSITE\JxcobCreations\Portfolio-CMS
 npm run db:init
@@ -259,6 +279,7 @@ npm install
 ## Support
 
 For issues:
+
 - Check [Portfolio-CMS/README.md](Portfolio-CMS/README.md)
 - Check [Portfolio-website/README.md](Portfolio-website/README.md)
 - Email: hello@jxcobcreations.com

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Next.js build artifacts
+.next
+out
+build
+dist
+
+# Generated assets
+analyze
+public/**/*.svg
+public/**/*.png
+public/**/*.jpg
+playwright/__snapshots__
+
+# Logs & misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.vercel
+
+# Environment files
+.env*
+!.env.example
+!.env.local
+
+# TypeScript
+*.tsbuildinfo

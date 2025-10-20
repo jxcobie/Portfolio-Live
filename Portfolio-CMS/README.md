@@ -55,13 +55,28 @@ cp .env.example .env
 Edit `.env` with your configuration:
 
 ```env
-PORT=3002
-API_KEY=your-secure-api-key-here
+CMS_PORT=1337
 NODE_ENV=development
+SESSION_SECRET=your-super-secret-session-key
 DATABASE_PATH=./cms_database.db
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=5242880
 ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Bootstrap admin (set a strong password or leave blank to auto-generate on init)
+CMS_BOOTSTRAP_ADMIN_USER=admin
+CMS_BOOTSTRAP_ADMIN_PASSWORD=
+
+# Optional overrides for scripts/tests
+CMS_BASE_URL=http://localhost:1337
+CMS_ADMIN_USER=
+CMS_ADMIN_PASSWORD=
+
+# Rate limiting
+RATE_LIMIT_WINDOW_MINUTES=15
+RATE_LIMIT_MAX_REQUESTS=500
+RATE_LIMIT_AUTH_WINDOW_MINUTES=15
+RATE_LIMIT_AUTH_REQUESTS=10
 ```
 
 ### 3. Initialize Database
@@ -69,6 +84,8 @@ ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
 ```bash
 npm run db:init
 ```
+
+> ℹ️ If `CMS_BOOTSTRAP_ADMIN_PASSWORD` is empty, the init script will generate a temporary password and print it to the console. Store it securely and update your `.env` (or secrets manager) before deploying.
 
 This creates the SQLite database with all required tables:
 
@@ -361,7 +378,8 @@ npm run db:init
 Add to `.env.local`:
 
 ```env
-NEXT_PUBLIC_CMS_URL=http://localhost:3002
+CMS_INTERNAL_URL=http://localhost:1337
+NEXT_PUBLIC_CMS_URL=http://localhost:1337
 CMS_API_KEY=your-api-key-here
 ```
 
@@ -369,31 +387,36 @@ CMS_API_KEY=your-api-key-here
 
 ```typescript
 // In your Next.js app
-const response = await fetch(
-  `${process.env.NEXT_PUBLIC_CMS_URL}/api/portfolio/public`,
-);
+const cmsBaseUrl =
+  process.env.CMS_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_CMS_URL ||
+  "http://localhost:1337";
+
+const response = await fetch(`${cmsBaseUrl}/api/portfolio/public`);
 const data = await response.json();
 ```
 
 ### Updating Data (Admin Only)
 
 ```typescript
-const response = await fetch(
-  `${process.env.NEXT_PUBLIC_CMS_URL}/api/portfolio`,
-  {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.CMS_API_KEY,
-    },
-    body: JSON.stringify({
-      section: "projects",
-      data: {
-        /* ... */
-      },
-    }),
+const cmsBaseUrl =
+  process.env.CMS_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_CMS_URL ||
+  "http://localhost:1337";
+
+const response = await fetch(`${cmsBaseUrl}/api/portfolio`, {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.CMS_API_KEY,
   },
-);
+  body: JSON.stringify({
+    section: "projects",
+    data: {
+      /* ... */
+    },
+  }),
+});
 ```
 
 ## Troubleshooting

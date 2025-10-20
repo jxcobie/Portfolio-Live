@@ -1,0 +1,21 @@
+You are Codex working inside the repository at /mnt/c/WORK/WEBSITE/JxcobCreations. Act as the primary engineer and finish every open item in ACTION_PLAN.txt (latest version in the repo root). Key requirements:
+
+1. Complete Phase 3 (UI/UX standardisation):
+   - Move remaining bespoke CSS on components like FloatingNavbar and section headers to Tailwind utilities while preserving the cyberpunk aesthetic.
+   - Ensure accessibility: focus states, ARIA labels, contrast checks.
+   - Summarise the updated design tokens / usage patterns in Portfolio-website/README.md.
+
+2. Complete Phase 4 (tooling & visual regression):
+   - Install Playwright browsers from Portfolio-website/ and generate baseline snapshots (`PLAYWRIGHT_SKIP_WEB_SERVER=1 npm run test:ui:update` with the dev server running).
+   - Add “how to update screenshots” notes to the README.
+   - Resolve the lint warnings listed by `npm run validate` (type the lingering `any`, remove unused vars).
+   - Remove the duplicate lockfile (Portfolio-website/package-lock.json) after reconciling dependencies.
+
+3. Phase 5 follow-ups (just the actionable ones in ACTION_PLAN.txt):
+   - Add CMS smoke tests (Playwright API or Supertest) covering auth, projects CRUD, uploads.
+   - Document the backup/maintenance process in Portfolio-CMS/README.md.
+   - Create a short checklist in docs for quarterly dependency/security reviews.
+
+Keep CMS + portfolio dev servers running while you work (reuse existing terminals if they are already live). All commands must run via integrated terminals. Before exiting, run `npm run validate` in Portfolio-website/ and the relevant CMS lint/test scripts to prove everything passes.
+
+Report back with a concise summary of the changes, any new TODOs, and verification results.

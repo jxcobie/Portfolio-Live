@@ -170,7 +170,7 @@
 
   /* Hide circuit traces on mobile */
   .circuit-trace,
-  svg[aria-hidden="true"] {
+  svg[aria-hidden='true'] {
     display: none !important;
   }
 
@@ -890,7 +890,7 @@
 
   /* Show URLs for links */
   a[href]:after {
-    content: " (" attr(href) ")";
+    content: ' (' attr(href) ')';
   }
 }
 

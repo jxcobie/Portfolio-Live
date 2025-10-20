@@ -1,113 +1,42 @@
-# ==================== ROOT LEVEL ====================
+# Node dependencies
+node_modules/
+*/node_modules/
 
-# Backup folders
-/husky-backup/
-/backup/
-/backup2/
-/old/
-/temp/
+# Next.js build artifacts
+.next/
+*/.next/
+out/
 
-# IDE
-.vscode/
-.idea/
-.claude/
-*.swp
-*.swo
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# OS files
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Databases and uploads
+*.db
+backups/
+uploads/
+Portfolio-CMS/uploads/
+Portfolio-website/public/uploads/
+
+# Editor and OS junk
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
 
-# ==================== PORTFOLIO-WEBSITE ====================
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
 
-# Dependencies
-Portfolio-website/node_modules/
-Portfolio-website/.pnp
-Portfolio-website/.pnp.js
-
-# Next.js
-Portfolio-website/.next/
-Portfolio-website/out/
-
-# Production
-Portfolio-website/build/
-Portfolio-website/dist/
-
-# Testing
-Portfolio-website/coverage/
-
-# Environment files
-Portfolio-website/.env
-Portfolio-website/.env*.local
-
-# Vercel
-Portfolio-website/.vercel
-
-# TypeScript
-Portfolio-website/*.tsbuildinfo
-Portfolio-website/next-env.d.ts
-
-# Logs
-Portfolio-website/npm-debug.log*
-Portfolio-website/yarn-debug.log*
-Portfolio-website/yarn-error.log*
-
-# CMS (old location - no longer used)
-Portfolio-website/cms/
-
-# ==================== PORTFOLIO-CMS ====================
-
-# Dependencies
-Portfolio-CMS/node_modules/
-
-# Database (exclude from git)
-Portfolio-CMS/*.db
-Portfolio-CMS/*.db-journal
-Portfolio-CMS/*.sqlite
-Portfolio-CMS/*.sqlite3
-
-# Uploads (exclude from git, use cloud storage)
-Portfolio-CMS/uploads/*
-!Portfolio-CMS/uploads/.gitkeep
-
-# Environment files
-Portfolio-CMS/.env
-Portfolio-CMS/.env.local
-
-# Logs
-Portfolio-CMS/logs/
-Portfolio-CMS/*.log
-Portfolio-CMS/npm-debug.log*
-
-# Backups
-Portfolio-CMS/backups/
-Portfolio-CMS/*.backup
-
-# Temporary files
-Portfolio-CMS/tmp/
-Portfolio-CMS/temp/
-Portfolio-CMS/*.tmp
-
-# ==================== GLOBAL IGNORES ====================
-
-# Node modules anywhere
-**/node_modules/
-
-# Environment files
-**/.env
-**/.env.local
-**/.env*.local
-
-# Logs
-**/npm-debug.log*
-**/yarn-debug.log*
-**/yarn-error.log*
-**/*.log
-
-# OS files
-**/.DS_Store
-**/Thumbs.db
-
-# Misc
-**/*.pem
-**/*.tsbuildinfo
+# Coverage
+coverage/

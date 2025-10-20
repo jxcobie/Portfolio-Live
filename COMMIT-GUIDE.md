@@ -49,6 +49,7 @@ git status
 ```
 
 **Expected output:**
+
 ```
 On branch master
 Untracked files:
@@ -75,6 +76,7 @@ git status
 ```
 
 **Expected output:**
+
 ```
 On branch master
 Changes to be committed:
@@ -119,6 +121,7 @@ git remote -v
 ```
 
 **Expected output:**
+
 ```
 origin  git@github.com:jxcobie/Portfolio-Live.git (fetch)
 origin  git@github.com:jxcobie/Portfolio-Live.git (push)
@@ -189,6 +192,7 @@ git commit --no-verify -m "your message"
 **Problem**: `fatal: remote origin already exists`
 
 **Solution**:
+
 ```bash
 # Remove existing remote
 git remote remove origin
@@ -202,6 +206,7 @@ git remote add origin git@github.com:jxcobie/Portfolio-Live.git
 **Problem**: `Permission denied (publickey)`
 
 **Solution**:
+
 ```bash
 # Generate SSH key
 ssh-keygen -t ed25519 -C "hello@jxcobcreations.com"
@@ -219,6 +224,7 @@ cat ~/.ssh/id_ed25519.pub
 ```
 
 **OR** use HTTPS instead:
+
 ```bash
 git remote set-url origin https://github.com/jxcobie/Portfolio-Live.git
 ```

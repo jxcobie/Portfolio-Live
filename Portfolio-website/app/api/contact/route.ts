@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-
-const CMS_URL = process.env.CMS_URL || 'http://localhost:1337';
+import { buildCmsUrl } from '@/lib/env';
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     // Send to CMS
-    const response = await fetch(`${CMS_URL}/api/messages`, {
+    const response = await fetch(buildCmsUrl('/api/messages'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +52,7 @@ export async function POST(request: Request) {
     const data = await response.json();
 
     // Track analytics (optional, don't block on this)
-    fetch(`${CMS_URL}/api/analytics/track`, {
+    fetch(buildCmsUrl('/api/analytics/track'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

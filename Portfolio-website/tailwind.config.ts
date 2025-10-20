@@ -158,6 +158,14 @@ const config = {
         warning: '#ffaa00',
         error: '#ff0055',
         info: '#00d4ff',
+        accent: 'var(--cyber-cyan)',
+        'accent-secondary': 'var(--cyber-orange)',
+        surface: 'var(--card)',
+        'surface-muted': 'var(--card-bg)',
+        'surface-overlay': 'rgba(15, 15, 25, 0.8)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'border-base': 'var(--border-color)',
       },
 
       // ===== FONT FAMILY =====
@@ -228,6 +236,7 @@ const config = {
         xl: '1rem',
         '2xl': '1.5rem',
         '3xl': '2rem',
+        card: 'var(--radius)',
         full: '9999px',
       },
 

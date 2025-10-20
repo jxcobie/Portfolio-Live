@@ -1,131 +1,139 @@
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcryptjs');
-const path = require('path');
-const fs = require('fs');
+const sqlite3 = require("sqlite3").verbose();
+const bcrypt = require("bcryptjs");
+const path = require("path");
+const fs = require("fs");
+const crypto = require("crypto");
+
+require("dotenv").config({
+  path: path.join(__dirname, "..", ".env"),
+});
 
 // Create or connect to database
-const db = new sqlite3.Database(path.join(__dirname, '..', 'cms_database.db'));
+const db = new sqlite3.Database(path.join(__dirname, "..", "cms_database.db"));
 
-console.log('🔧 Initializing database...');
+console.log("🔧 Initializing database...");
 
 // Sample projects data
 const sampleProjects = [
   {
-    title: 'E-Commerce Automation Suite',
-    slug: 'ecommerce-automation-suite',
+    title: "E-Commerce Automation Suite",
+    slug: "ecommerce-automation-suite",
     description:
-      'A comprehensive full-stack e-commerce platform with automated inventory management, dynamic pricing, and advanced analytics.',
-    short_description: 'Full-stack platform with automated inventory and order processing.',
-    status: 'Deployed',
-    category: 'Web Application',
-    client: 'TechMart Solutions',
-    duration: '6 months',
-    role: 'Full-Stack Lead Developer',
+      "A comprehensive full-stack e-commerce platform with automated inventory management, dynamic pricing, and advanced analytics.",
+    short_description:
+      "Full-stack platform with automated inventory and order processing.",
+    status: "Deployed",
+    category: "Web Application",
+    client: "TechMart Solutions",
+    duration: "6 months",
+    role: "Full-Stack Lead Developer",
     team_size: 4,
-    live_url: 'https://ecommerce-demo.example.com',
-    repo_url: 'https://github.com/yourusername/ecommerce-suite',
+    live_url: "https://ecommerce-demo.example.com",
+    repo_url: "https://github.com/yourusername/ecommerce-suite",
     featured: 1,
     overview:
-      '<p>Developed a cutting-edge e-commerce platform that revolutionizes online retail through intelligent automation and data-driven decision making.</p>',
+      "<p>Developed a cutting-edge e-commerce platform that revolutionizes online retail through intelligent automation and data-driven decision making.</p>",
     challenge:
-      '<p>The client needed a solution that could handle 100,000+ SKUs, process thousands of orders daily, and automatically adjust pricing based on market conditions.</p>',
+      "<p>The client needed a solution that could handle 100,000+ SKUs, process thousands of orders daily, and automatically adjust pricing based on market conditions.</p>",
     solution:
-      '<p>Built a microservices architecture using Next.js for the frontend and Node.js for backend services, integrated with n8n for workflow automation.</p>',
+      "<p>Built a microservices architecture using Next.js for the frontend and Node.js for backend services, integrated with n8n for workflow automation.</p>",
     process:
-      '<p>Implemented agile methodology with 2-week sprints, continuous integration/deployment, and comprehensive testing at every stage.</p>',
+      "<p>Implemented agile methodology with 2-week sprints, continuous integration/deployment, and comprehensive testing at every stage.</p>",
     results:
-      '<p>Achieved 80% reduction in manual processing time, 35% increase in conversion rates, and 99.9% uptime since deployment.</p>',
+      "<p>Achieved 80% reduction in manual processing time, 35% increase in conversion rates, and 99.9% uptime since deployment.</p>",
     technical_details:
-      '<p>Stack includes Next.js 14, PostgreSQL, Redis for caching, n8n for automation, and deployed on AWS with auto-scaling.</p>',
+      "<p>Stack includes Next.js 14, PostgreSQL, Redis for caching, n8n for automation, and deployed on AWS with auto-scaling.</p>",
     lessons_learned:
-      '<p>The importance of building scalable architecture from day one and investing in comprehensive monitoring and alerting systems.</p>',
+      "<p>The importance of building scalable architecture from day one and investing in comprehensive monitoring and alerting systems.</p>",
   },
   {
-    title: 'AI-Powered CRM Platform',
-    slug: 'ai-crm-platform',
+    title: "AI-Powered CRM Platform",
+    slug: "ai-crm-platform",
     description:
-      'Custom CRM solution with machine learning capabilities for lead scoring, customer segmentation, and predictive analytics.',
-    short_description: 'Intelligent CRM with automated lead scoring and predictive analytics.',
-    status: 'Active',
-    category: 'SaaS Platform',
-    client: 'SalesForce Pro',
-    duration: '4 months',
-    role: 'Lead Developer',
+      "Custom CRM solution with machine learning capabilities for lead scoring, customer segmentation, and predictive analytics.",
+    short_description:
+      "Intelligent CRM with automated lead scoring and predictive analytics.",
+    status: "Active",
+    category: "SaaS Platform",
+    client: "SalesForce Pro",
+    duration: "4 months",
+    role: "Lead Developer",
     team_size: 3,
-    live_url: 'https://crm-demo.example.com',
-    repo_url: 'https://github.com/yourusername/ai-crm',
+    live_url: "https://crm-demo.example.com",
+    repo_url: "https://github.com/yourusername/ai-crm",
     featured: 1,
     overview:
-      '<p>Revolutionary CRM platform that leverages artificial intelligence to provide unprecedented insights into customer behavior and sales opportunities.</p>',
+      "<p>Revolutionary CRM platform that leverages artificial intelligence to provide unprecedented insights into customer behavior and sales opportunities.</p>",
     challenge:
-      '<p>Traditional CRMs were failing to provide actionable insights from the vast amounts of customer data being collected.</p>',
+      "<p>Traditional CRMs were failing to provide actionable insights from the vast amounts of customer data being collected.</p>",
     solution:
-      '<p>Integrated machine learning models for predictive lead scoring and automated customer segmentation based on behavior patterns.</p>',
+      "<p>Integrated machine learning models for predictive lead scoring and automated customer segmentation based on behavior patterns.</p>",
     results:
-      '<p>45% improvement in lead conversion rates and 60% reduction in time spent on manual data entry and analysis.</p>',
+      "<p>45% improvement in lead conversion rates and 60% reduction in time spent on manual data entry and analysis.</p>",
   },
   {
-    title: 'Real-Time Analytics Dashboard',
-    slug: 'analytics-dashboard',
+    title: "Real-Time Analytics Dashboard",
+    slug: "analytics-dashboard",
     description:
-      'High-performance dashboard for real-time data visualization and business intelligence reporting.',
-    short_description: 'Real-time data visualization and business intelligence platform.',
-    status: 'Deployed',
-    category: 'Data Visualization',
-    client: 'DataInsight Corp',
-    duration: '3 months',
-    role: 'Frontend Specialist',
+      "High-performance dashboard for real-time data visualization and business intelligence reporting.",
+    short_description:
+      "Real-time data visualization and business intelligence platform.",
+    status: "Deployed",
+    category: "Data Visualization",
+    client: "DataInsight Corp",
+    duration: "3 months",
+    role: "Frontend Specialist",
     team_size: 2,
-    live_url: 'https://analytics-demo.example.com',
+    live_url: "https://analytics-demo.example.com",
     featured: 0,
     overview:
-      '<p>Built a comprehensive analytics platform capable of processing and visualizing millions of data points in real-time.</p>',
+      "<p>Built a comprehensive analytics platform capable of processing and visualizing millions of data points in real-time.</p>",
     challenge:
-      '<p>The client needed to monitor multiple data streams simultaneously and make instant decisions based on complex metrics.</p>',
+      "<p>The client needed to monitor multiple data streams simultaneously and make instant decisions based on complex metrics.</p>",
     solution:
-      '<p>Implemented WebSocket connections for real-time updates, with D3.js and Chart.js for interactive visualizations.</p>',
+      "<p>Implemented WebSocket connections for real-time updates, with D3.js and Chart.js for interactive visualizations.</p>",
     results:
-      '<p>Reduced decision-making time by 70% and improved operational efficiency by 40% through instant access to key metrics.</p>',
+      "<p>Reduced decision-making time by 70% and improved operational efficiency by 40% through instant access to key metrics.</p>",
   },
 ];
 
 // Sample technologies
 const sampleTechnologies = [
-  'React',
-  'Next.js',
-  'TypeScript',
-  'JavaScript',
-  'Node.js',
-  'Express',
-  'PostgreSQL',
-  'MongoDB',
-  'Redis',
-  'Docker',
-  'AWS',
-  'Vercel',
-  'Tailwind CSS',
-  'Framer Motion',
-  'GraphQL',
-  'REST API',
-  'n8n',
-  'Python',
-  'Django',
-  'Vue.js',
-  'Svelte',
-  'Firebase',
-  'Supabase',
-  'Prisma',
-  'Socket.io',
-  'D3.js',
-  'Chart.js',
-  'Three.js',
-  'WebGL',
-  'Git',
+  "React",
+  "Next.js",
+  "TypeScript",
+  "JavaScript",
+  "Node.js",
+  "Express",
+  "PostgreSQL",
+  "MongoDB",
+  "Redis",
+  "Docker",
+  "AWS",
+  "Vercel",
+  "Tailwind CSS",
+  "Framer Motion",
+  "GraphQL",
+  "REST API",
+  "n8n",
+  "Python",
+  "Django",
+  "Vue.js",
+  "Svelte",
+  "Firebase",
+  "Supabase",
+  "Prisma",
+  "Socket.io",
+  "D3.js",
+  "Chart.js",
+  "Three.js",
+  "WebGL",
+  "Git",
 ];
 
 // Initialize database
 db.serialize(() => {
-  console.log('📊 Creating tables...');
+  console.log("📊 Creating tables...");
 
   // Create all tables (same as in server.js)
   db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -275,34 +283,46 @@ db.serialize(() => {
     UNIQUE(link_id, date)
   )`);
 
-  console.log('✅ Tables created successfully');
+  console.log("✅ Tables created successfully");
 
   // Insert admin user
-  console.log('👤 Creating admin user...');
-  const adminPassword = bcrypt.hashSync('admin123', 10);
+  console.log("👤 Ensuring admin user...");
+  const bootstrapUsername = process.env.CMS_BOOTSTRAP_ADMIN_USER || "admin";
+  let bootstrapPassword = process.env.CMS_BOOTSTRAP_ADMIN_PASSWORD;
+
+  if (!bootstrapPassword) {
+    bootstrapPassword = crypto.randomBytes(12).toString("base64url");
+    console.log(
+      `⚠️  CMS_BOOTSTRAP_ADMIN_PASSWORD not set. Generated temporary admin password for ${bootstrapUsername}: ${bootstrapPassword}`,
+    );
+  }
+
+  const adminPassword = bcrypt.hashSync(bootstrapPassword, 12);
   db.run(
-    `INSERT OR REPLACE INTO users (username, password, role) VALUES (?, ?, ?)`,
-    ['admin', adminPassword, 'admin'],
+    `INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)`,
+    [bootstrapUsername, adminPassword, "admin"],
     (err) => {
       if (err) {
-        console.error('Error creating admin user:', err);
+        console.error("Error creating admin user:", err);
       } else {
-        console.log('✅ Admin user created (username: admin, password: admin123)');
+        console.log(`✅ Admin user available (username: ${bootstrapUsername})`);
       }
-    }
+    },
   );
 
   // Insert technologies
-  console.log('🔧 Adding technologies...');
-  const techStmt = db.prepare(`INSERT OR IGNORE INTO technologies (name, category) VALUES (?, ?)`);
+  console.log("🔧 Adding technologies...");
+  const techStmt = db.prepare(
+    `INSERT OR IGNORE INTO technologies (name, category) VALUES (?, ?)`,
+  );
   sampleTechnologies.forEach((tech) => {
-    techStmt.run(tech, 'General');
+    techStmt.run(tech, "General");
   });
   techStmt.finalize();
-  console.log('✅ Technologies added');
+  console.log("✅ Technologies added");
 
   // Insert sample projects
-  console.log('📁 Adding sample projects...');
+  console.log("📁 Adding sample projects...");
   sampleProjects.forEach((project, index) => {
     db.run(
       `INSERT INTO projects (
@@ -329,89 +349,94 @@ db.serialize(() => {
         project.overview,
         project.challenge,
         project.solution,
-        project.process || '',
+        project.process || "",
         project.results,
-        project.technical_details || '',
-        project.lessons_learned || '',
+        project.technical_details || "",
+        project.lessons_learned || "",
       ],
       function (err) {
         if (err) {
-          console.error('Error inserting project:', err);
+          console.error("Error inserting project:", err);
         } else {
           const projectId = this.lastID;
 
           // Add sample image
           db.run(
             `INSERT INTO project_images (project_id, image_url, image_type, alt_text) VALUES (?, ?, ?, ?)`,
-            [projectId, `/uploads/project-${projectId}.jpg`, 'cover', project.title]
+            [
+              projectId,
+              `/uploads/project-${projectId}.jpg`,
+              "cover",
+              project.title,
+            ],
           );
 
           // Add technologies (randomly assign 3-5 techs)
           const techCount = Math.floor(Math.random() * 3) + 3;
           const shuffled = [...Array(sampleTechnologies.length).keys()].sort(
-            () => 0.5 - Math.random()
+            () => 0.5 - Math.random(),
           );
 
           for (let i = 0; i < techCount; i++) {
-            db.run(`INSERT INTO project_technologies (project_id, technology_id) VALUES (?, ?)`, [
-              projectId,
-              shuffled[i] + 1,
-            ]);
+            db.run(
+              `INSERT INTO project_technologies (project_id, technology_id) VALUES (?, ?)`,
+              [projectId, shuffled[i] + 1],
+            );
           }
         }
-      }
+      },
     );
   });
 
-  console.log('✅ Sample projects added');
+  console.log("✅ Sample projects added");
 
   // Add sample messages
-  console.log('💬 Adding sample messages...');
+  console.log("💬 Adding sample messages...");
   const sampleMessages = [
     {
-      name: 'John Doe',
-      email: 'john@example.com',
-      subject: 'Interested in your services',
+      name: "John Doe",
+      email: "john@example.com",
+      subject: "Interested in your services",
       message:
         "Hi, I saw your portfolio and I'm impressed with your work. I have a project that I'd like to discuss with you. Could we schedule a call?",
     },
     {
-      name: 'Sarah Smith',
-      email: 'sarah@company.com',
-      subject: 'Partnership Opportunity',
+      name: "Sarah Smith",
+      email: "sarah@company.com",
+      subject: "Partnership Opportunity",
       message:
         "We're looking for a talented developer to join our team on a contract basis. Your experience with automation and full-stack development is exactly what we need.",
     },
     {
-      name: 'Mike Johnson',
-      email: 'mike@startup.io',
-      subject: 'Quick Question',
+      name: "Mike Johnson",
+      email: "mike@startup.io",
+      subject: "Quick Question",
       message:
         "Love your work! I'm particularly interested in the e-commerce automation project. What technologies did you use for the real-time inventory management?",
     },
   ];
 
   const msgStmt = db.prepare(
-    `INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)`
+    `INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)`,
   );
 
   sampleMessages.forEach((msg) => {
     msgStmt.run(msg.name, msg.email, msg.subject, msg.message);
   });
   msgStmt.finalize();
-  console.log('✅ Sample messages added');
+  console.log("✅ Sample messages added");
 
   // Add sample analytics
-  console.log('📊 Adding sample analytics...');
+  console.log("📊 Adding sample analytics...");
   const events = [
-    { type: 'page_view', page: '/', data: '{}' },
-    { type: 'page_view', page: '/projects', data: '{}' },
-    { type: 'project_view', page: '/projects/1', data: '{"projectId": 1}' },
-    { type: 'contact_form_view', page: '/contact', data: '{}' },
+    { type: "page_view", page: "/", data: "{}" },
+    { type: "page_view", page: "/projects", data: "{}" },
+    { type: "project_view", page: "/projects/1", data: '{"projectId": 1}' },
+    { type: "contact_form_view", page: "/contact", data: "{}" },
   ];
 
   const analyticsStmt = db.prepare(
-    `INSERT INTO analytics (event_type, page_url, event_data) VALUES (?, ?, ?)`
+    `INSERT INTO analytics (event_type, page_url, event_data) VALUES (?, ?, ?)`,
   );
 
   // Add some events for the last 7 days
@@ -429,39 +454,48 @@ db.serialize(() => {
     }
   }
   analyticsStmt.finalize();
-  console.log('✅ Sample analytics added');
+  console.log("✅ Sample analytics added");
 
   // Add booking system tables
-  console.log('📅 Creating booking system tables...');
+  console.log("📅 Creating booking system tables...");
   try {
-    const bookingSchema = fs.readFileSync(path.join(__dirname, 'booking-schema.sql'), 'utf8');
-    const statements = bookingSchema.split(';').filter(stmt => stmt.trim());
+    const bookingSchema = fs.readFileSync(
+      path.join(__dirname, "booking-schema.sql"),
+      "utf8",
+    );
+    const statements = bookingSchema.split(";").filter((stmt) => stmt.trim());
 
-    statements.forEach(statement => {
+    statements.forEach((statement) => {
       if (statement.trim()) {
         db.run(statement, (err) => {
-          if (err && !err.message.includes('already exists') && !err.message.includes('UNIQUE constraint')) {
-            console.error('Error creating booking table:', err);
+          if (
+            err &&
+            !err.message.includes("already exists") &&
+            !err.message.includes("UNIQUE constraint")
+          ) {
+            console.error("Error creating booking table:", err);
           }
         });
       }
     });
 
-    console.log('✅ Booking system tables created');
+    console.log("✅ Booking system tables created");
   } catch (err) {
-    console.error('Error loading booking schema:', err);
+    console.error("Error loading booking schema:", err);
   }
 
-  console.log('\n🎉 Database initialization complete!');
-  console.log('📌 You can now start the CMS server with: npm start');
-  console.log('🔐 Login credentials: admin / admin123');
+  console.log("\n🎉 Database initialization complete!");
+  console.log("📌 You can now start the CMS server with: npm start");
+  console.log(
+    "🔐 Review the output above for generated or configured admin credentials.",
+  );
 });
 
 // Close database connection
 db.close((err) => {
   if (err) {
-    console.error('Error closing database:', err);
+    console.error("Error closing database:", err);
   } else {
-    console.log('✅ Database connection closed');
+    console.log("✅ Database connection closed");
   }
 });

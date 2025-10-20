@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run cms:*)",
+      "Bash(curl:*)",
+      "Bash(for i in {1..6})",
+      "Bash(do curl -X DELETE \"http://localhost:3002/api/portfolio\" -H \"Content-Type: application/json\" -d '{\"\"section\"\": \"\"projects\"\", \"\"id\"\": 1}' -w \"\\nRequest $i Status: %{http_code}\\n\\n\")",
+      "Bash(done)",
+      "Bash(npm run format:check:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run db:init:*)",
+      "Bash(node scripts/init-db.js:*)",
+      "Bash(npm start)",
+      "Bash(python:*)",
+      "Bash(node scripts/test-affiliate.js:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(for i in {1..3})",
+      "Bash(do curl -s -X GET \"http://localhost:1337/go/test-prod\" -L --max-redirs 0 -w \"\\nTest $i - Status: %{http_code} | Redirect: %{redirect_url}\\n\" -H \"User-Agent: Mozilla/5.0 (Test $i)\")",
+      "Bash(timeout 3 curl:*)",
+      "Bash(sqlite3:*)",
+      "Bash(npm run test:features:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(node scripts/test-email.js:*)",
+      "Bash(npm run dev:cms:*)",
+      "Bash(npm run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
