@@ -31,6 +31,8 @@ CMS_API_KEY=your-api-key-here
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
+> 🔑 The `CMS_API_KEY` value must match the `CMS_API_KEY` configured in the CMS. All internal API routes forward requests with this key so the CMS rejects anonymous writes.
+
 ### 3. Start Development Server
 
 First, ensure the CMS is running (in separate terminal):

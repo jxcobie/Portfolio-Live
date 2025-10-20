@@ -13,12 +13,21 @@ const API_KEY = process.env.CMS_API_KEY || process.env.API_KEY;
 async function testBookingSystem() {
   console.log("🧪 Testing Booking System\n");
 
+  if (!API_KEY) {
+    throw new Error(
+      "CMS_API_KEY is required to run booking system tests. Please set CMS_API_KEY in your environment.",
+    );
+  }
+
   try {
     // Test 1: Check availability for today
     console.log("1️⃣  Testing availability endpoint...");
     const today = new Date().toISOString().split("T")[0];
     const availRes = await fetch(
       `${CMS_URL}/api/bookings/availability/${today}?duration=30`,
+      {
+        headers: { "x-cms-api-key": API_KEY },
+      },
     );
     const avail = await availRes.json();
     console.log(
@@ -36,7 +45,10 @@ async function testBookingSystem() {
     const firstSlot = avail.availableSlots[0];
     const bookingRes = await fetch(`${CMS_URL}/api/bookings`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-cms-api-key": API_KEY,
+      },
       body: JSON.stringify({
         name: "Test User",
         email: "test@example.com",
@@ -101,6 +113,9 @@ async function testBookingSystem() {
     console.log("\n5️⃣  Re-checking availability...");
     const avail2Res = await fetch(
       `${CMS_URL}/api/bookings/availability/${today}?duration=30`,
+      {
+        headers: { "x-cms-api-key": API_KEY },
+      },
     );
     const avail2 = await avail2Res.json();
     console.log(

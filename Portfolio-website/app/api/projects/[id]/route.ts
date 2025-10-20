@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import createDOMPurify from 'isomorphic-dompurify';
-import { buildCmsUrl } from '@/lib/env';
+import { fetchFromCms, MissingCmsApiKeyError } from '@/lib/cms-client';
 
 const DOMPurify = createDOMPurify();
 
@@ -8,11 +8,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
 
   try {
-    const response = await fetch(buildCmsUrl(`/api/projects/public/${id}`), {
+    const response = await fetchFromCms(`/api/projects/public/${id}`, {
       cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (response.status === 404) {
@@ -43,7 +40,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch (error) {
-    console.error(`Error fetching project ${id}:`, error);
+    if (error instanceof MissingCmsApiKeyError) {
+      console.error('CMS API key missing while fetching project');
+    } else {
+      console.error(`Error fetching project ${id}:`, error);
+    }
     return NextResponse.json({ error: 'Failed to fetch project from CMS' }, { status: 502 });
   }
 }

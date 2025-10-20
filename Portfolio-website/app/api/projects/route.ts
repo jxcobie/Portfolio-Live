@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildCmsUrl } from '@/lib/env';
+import { fetchFromCms, MissingCmsApiKeyError } from '@/lib/cms-client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,11 +7,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
 
-    const response = await fetch(buildCmsUrl(`/api/projects/public?page=${page}&limit=${limit}`), {
+    const response = await fetchFromCms(`/api/projects/public?page=${page}&limit=${limit}`, {
       cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -42,7 +39,11 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    if (error instanceof MissingCmsApiKeyError) {
+      console.error('CMS API key missing while fetching projects');
+    } else {
+      console.error('Error fetching projects:', error);
+    }
     return NextResponse.json(
       {
         projects: [],

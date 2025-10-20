@@ -16,8 +16,191 @@ const rateLimit = require("express-rate-limit");
 const app = express();
 const PORT = process.env.CMS_PORT || 1337;
 
+const sessionSecret = process.env.SESSION_SECRET;
+const serviceApiKey = process.env.CMS_API_KEY;
+
+if (!sessionSecret) {
+  throw new Error(
+    "SESSION_SECRET environment variable is required for the CMS to start.",
+  );
+}
+
+if (!serviceApiKey) {
+  throw new Error(
+    "CMS_API_KEY environment variable is required for authenticated requests.",
+  );
+}
+
 // Real-time analytics event emitter
 const analyticsEmitter = new EventEmitter();
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const timeRegex = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+
+const clampString = (value, maxLength) => {
+  if (typeof value !== "string") return "";
+  if (!maxLength || value.length <= maxLength) return value;
+  return value.slice(0, maxLength);
+};
+
+const sanitizeInput = (value, { multiline = false, maxLength } = {}) => {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const withoutTags = value.replace(/<[^>]*>/g, "");
+  const normalized = multiline
+    ? withoutTags.replace(/\r?\n/g, "\n").replace(/[\t\v\f\r]/g, "")
+    : withoutTags.replace(/\s+/g, " ");
+
+  const trimmed = normalized.trim();
+  return clampString(trimmed, maxLength);
+};
+
+const requireServiceApiKey = (req, res, next) => {
+  if (req.session && req.session.authenticated) {
+    return next();
+  }
+
+  const providedKey =
+    req.get("x-cms-api-key") || req.get("x-api-key") || req.query.api_key;
+
+  if (!providedKey || providedKey !== serviceApiKey) {
+    return res.status(401).json({ error: "Invalid or missing API key" });
+  }
+
+  return next();
+};
+
+const validateMessagePayload = (payload = {}) => {
+  const errors = [];
+
+  const name = sanitizeInput(payload.name, { maxLength: 100 });
+  if (!name || name.length < 2) {
+    errors.push({ field: "name", message: "Name must be at least 2 characters" });
+  }
+
+  const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+  if (!emailRegex.test(email)) {
+    errors.push({ field: "email", message: "Invalid email address" });
+  }
+
+  const subject = sanitizeInput(payload.subject || "Contact Form Submission", {
+    maxLength: 300,
+  });
+
+  const message = sanitizeInput(payload.message, {
+    multiline: true,
+    maxLength: 5000,
+  });
+
+  if (!message || message.length < 10) {
+    errors.push({
+      field: "message",
+      message: "Message must be at least 10 characters",
+    });
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return {
+    valid: true,
+    data: {
+      name,
+      email,
+      subject,
+      message,
+    },
+  };
+};
+
+const validateAnalyticsPayload = (payload = {}) => {
+  const errors = [];
+
+  const eventType = sanitizeInput(payload.event_type, { maxLength: 100 });
+  if (!eventType) {
+    errors.push({ field: "event_type", message: "Event type is required" });
+  }
+
+  const pageUrl = sanitizeInput(payload.page_url || "", { maxLength: 2000 });
+  const referrer = sanitizeInput(payload.referrer || "", { maxLength: 2000 });
+
+  const eventData =
+    payload.event_data && typeof payload.event_data === "object"
+      ? payload.event_data
+      : {};
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return {
+    valid: true,
+    data: {
+      event_type: eventType,
+      event_data: eventData,
+      page_url: pageUrl,
+      referrer,
+    },
+  };
+};
+
+const validateBookingPayload = (payload = {}) => {
+  const errors = [];
+
+  const name = sanitizeInput(payload.name, { maxLength: 100 });
+  if (!name || name.length < 2) {
+    errors.push({ field: "name", message: "Name must be at least 2 characters" });
+  }
+
+  const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+  if (!emailRegex.test(email)) {
+    errors.push({ field: "email", message: "Invalid email address" });
+  }
+
+  const date = typeof payload.date === "string" ? payload.date.trim() : "";
+  if (!isoDateRegex.test(date)) {
+    errors.push({ field: "date", message: "Date must be in YYYY-MM-DD format" });
+  }
+
+  const time = typeof payload.time === "string" ? payload.time.trim() : "";
+  if (!timeRegex.test(time)) {
+    errors.push({ field: "time", message: "Time must be in HH:MM format" });
+  }
+
+  const duration = Number(payload.duration);
+  if (!Number.isInteger(duration) || duration < 15 || duration > 240) {
+    errors.push({
+      field: "duration",
+      message: "Duration must be an integer between 15 and 240 minutes",
+    });
+  }
+
+  const meetingType = sanitizeInput(payload.meetingType || "", { maxLength: 100 });
+  const phone = sanitizeInput(payload.phone || "", { maxLength: 50 });
+  const notes = sanitizeInput(payload.notes || "", { multiline: true, maxLength: 2000 });
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return {
+    valid: true,
+    data: {
+      name,
+      email,
+      date,
+      time,
+      duration,
+      meetingType: meetingType || null,
+      phone: phone || null,
+      notes: notes || null,
+    },
+  };
+};
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -61,6 +244,21 @@ function generateShortCode() {
 
 // ==================== DATABASE SETUP ====================
 const db = new sqlite3.Database("./cms_database.db");
+
+const createIndex = (name, sql) => {
+  db.run(sql, (err) => {
+    if (!err) {
+      return;
+    }
+
+    if (err.message && err.message.includes("no such table")) {
+      console.warn(`Skipping index ${name}: dependent table missing.`);
+      return;
+    }
+
+    console.error(`Failed to create index ${name}:`, err.message);
+  });
+};
 
 // Initialize database tables
 db.serialize(() => {
@@ -176,6 +374,19 @@ db.serialize(() => {
     session_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  createIndex(
+    "idx_projects_slug",
+    "CREATE INDEX IF NOT EXISTS idx_projects_slug ON projects(slug)",
+  );
+  createIndex(
+    "idx_messages_created_at",
+    "CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)",
+  );
+  createIndex(
+    "idx_bookings_date_time",
+    "CREATE INDEX IF NOT EXISTS idx_bookings_date_time ON bookings(date, time)",
+  );
 
   const bootstrapUsername = process.env.CMS_BOOTSTRAP_ADMIN_USER;
   const bootstrapPassword = process.env.CMS_BOOTSTRAP_ADMIN_PASSWORD;
@@ -300,8 +511,7 @@ fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
 // Session configuration
 app.use(
   session({
-    secret:
-      process.env.SESSION_SECRET || crypto.randomBytes(64).toString("hex"),
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -980,16 +1190,19 @@ app.delete("/api/projects/:id", requireAuth, async (req, res) => {
 // ==================== MESSAGE ROUTES ====================
 
 // Public endpoint for contact form
-app.post("/api/messages", (req, res) => {
-  const { name, email, subject, message } = req.body;
+app.post("/api/messages", requireServiceApiKey, (req, res) => {
+  const validation = validateMessagePayload(req.body);
+
+  if (!validation.valid) {
+    return res.status(400).json({
+      error: "Invalid message payload",
+      details: validation.errors,
+    });
+  }
+
+  const { name, email, subject, message } = validation.data;
   const ipAddress = req.ip;
   const userAgent = req.get("user-agent");
-
-  if (!name || !email || !message) {
-    return res
-      .status(400)
-      .json({ error: "Name, email, and message are required" });
-  }
 
   const query = `
     INSERT INTO messages (name, email, subject, message, ip_address, user_agent)
@@ -1001,6 +1214,7 @@ app.post("/api/messages", (req, res) => {
     [name, email, subject, message, ipAddress, userAgent],
     function (err) {
       if (err) {
+        console.error("Failed to send message:", err);
         return res.status(500).json({ error: "Failed to send message" });
       }
 
@@ -1093,8 +1307,17 @@ app.get("/api/technologies", (req, res) => {
 });
 
 // ==================== ANALYTICS ROUTES ====================
-app.post("/api/analytics/track", (req, res) => {
-  const { event_type, event_data, page_url, referrer } = req.body;
+app.post("/api/analytics/track", requireServiceApiKey, (req, res) => {
+  const validation = validateAnalyticsPayload(req.body);
+
+  if (!validation.valid) {
+    return res.status(400).json({
+      error: "Invalid analytics payload",
+      details: validation.errors,
+    });
+  }
+
+  const { event_type, event_data, page_url, referrer } = validation.data;
   const ipAddress = req.ip;
   const userAgent = req.get("user-agent");
   const sessionId = req.session?.id || crypto.randomBytes(16).toString("hex");
@@ -2457,30 +2680,40 @@ async function sendBookingConfirmation(booking) {
 }
 
 // CREATE BOOKING
-app.post("/api/bookings", async (req, res) => {
-  const { name, email, phone, date, time, duration, meetingType, notes } =
-    req.body;
+app.post("/api/bookings", requireServiceApiKey, async (req, res) => {
+  const validation = validateBookingPayload(req.body);
 
-  if (!name || !email || !date || !time || !duration) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!validation.valid) {
+    return res.status(400).json({
+      error: "Invalid booking payload",
+      details: validation.errors,
+    });
   }
 
-  // Check if slot is available
+  const { name, email, phone, date, time, duration, meetingType, notes } =
+    validation.data;
+
   db.get(
     'SELECT id FROM bookings WHERE date = ? AND time = ? AND status = "confirmed"',
     [date, time],
     async (err, existing) => {
-      if (err) return res.status(500).json({ error: "Database error" });
-      if (existing)
+      if (err) {
+        console.error("Failed to validate booking slot:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      if (existing) {
         return res.status(409).json({ error: "Time slot no longer available" });
+      }
 
       db.run(
         `INSERT INTO bookings (name, email, phone, date, time, duration, meeting_type, notes, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
         [name, email, phone, date, time, duration, meetingType, notes],
         async function (err) {
-          if (err)
+          if (err) {
+            console.error("Failed to create booking:", err);
             return res.status(500).json({ error: "Failed to create booking" });
+          }
 
           const bookingId = this.lastID;
           const meetingLink = generateMeetLink(bookingId);
@@ -2494,6 +2727,13 @@ app.post("/api/bookings", async (req, res) => {
             "SELECT * FROM bookings WHERE id = ?",
             [bookingId],
             async (err, booking) => {
+              if (err) {
+                console.error("Failed to load booking for confirmation:", err);
+                return res.status(500).json({
+                  error: "Booking created but failed to load confirmation",
+                });
+              }
+
               try {
                 await sendBookingConfirmation(booking);
                 console.log(
@@ -2508,11 +2748,11 @@ app.post("/api/bookings", async (req, res) => {
                 bookingId,
                 booking: {
                   id: bookingId,
-                  name,
-                  email,
-                  date,
-                  time,
-                  duration,
+                  name: booking.name,
+                  email: booking.email,
+                  date: booking.date,
+                  time: booking.time,
+                  duration: booking.duration,
                   meetingLink,
                 },
                 message: "Booking confirmed! Check your email.",
@@ -2587,125 +2827,185 @@ app.delete("/api/bookings/:id", requireAuth, (req, res) => {
 });
 
 // GET AVAILABILITY FOR DATE (with dynamic working hours)
-app.get("/api/bookings/availability/:date", (req, res) => {
-  const { date } = req.params;
-  const { duration = 30 } = req.query;
-  const dayOfWeek = new Date(date).getDay();
+app.get(
+  "/api/bookings/availability/:date",
+  requireServiceApiKey,
+  (req, res) => {
+    const requestedDate = sanitizeInput(req.params.date, { maxLength: 10 });
+    if (!isoDateRegex.test(requestedDate)) {
+      return res.status(400).json({
+        error: "Date must be in YYYY-MM-DD format",
+      });
+    }
 
-  // Check if day has availability override
-  db.get(
-    "SELECT * FROM availability_overrides WHERE date = ?",
-    [date],
-    (err, override) => {
-      if (err) return res.status(500).json({ error: "Database error" });
+    const durationInput = Number(req.query.duration ?? 30);
+    if (
+      !Number.isInteger(durationInput) ||
+      durationInput < 15 ||
+      durationInput > 240
+    ) {
+      return res.status(400).json({
+        error: "Duration must be an integer between 15 and 240 minutes",
+      });
+    }
 
-      // If day is marked unavailable, return empty
-      if (override && !override.is_available) {
-        return res.json({
-          date,
-          isAvailable: false,
-          reason: override.reason,
-          availableSlots: [],
-        });
-      }
+    const normalizedDuration = durationInput;
+    const dayOfWeek = new Date(`${requestedDate}T00:00:00`).getDay();
 
-      // Get working hours for this day
-      db.all(
-        "SELECT * FROM working_hours WHERE day_of_week = ? AND is_working = 1",
-        [dayOfWeek],
-        (err, workingHours) => {
-          if (err) return res.status(500).json({ error: "Database error" });
+    db.get(
+      "SELECT * FROM availability_overrides WHERE date = ?",
+      [requestedDate],
+      (err, override) => {
+        if (err) {
+          console.error("Failed to load availability override:", err);
+          return res.status(500).json({ error: "Database error" });
+        }
 
-          // Get custom available slots for this date
-          db.all(
-            "SELECT * FROM available_slots WHERE date = ?",
-            [date],
-            (err, customSlots) => {
-              if (err) return res.status(500).json({ error: "Database error" });
+        if (override && !override.is_available) {
+          return res.json({
+            date: requestedDate,
+            dayOfWeek,
+            isAvailable: false,
+            reason: override.reason,
+            availableSlots: [],
+            bookedCount: 0,
+            blockedCount: 0,
+          });
+        }
 
-              // Get blocked slots
-              db.all(
-                "SELECT * FROM blocked_slots WHERE date = ?",
-                [date],
-                (err, blockedSlots) => {
-                  if (err)
-                    return res.status(500).json({ error: "Database error" });
+        db.all(
+          "SELECT * FROM working_hours WHERE day_of_week = ? AND is_working = 1",
+          [dayOfWeek],
+          (err, workingHours) => {
+            if (err) {
+              console.error("Failed to load working hours:", err);
+              return res.status(500).json({ error: "Database error" });
+            }
 
-                  // Get booked slots
-                  db.all(
-                    'SELECT time, duration FROM bookings WHERE date = ? AND status = "confirmed"',
-                    [date],
-                    (err, bookedSlots) => {
-                      if (err)
-                        return res
-                          .status(500)
-                          .json({ error: "Database error" });
+            db.all(
+              "SELECT * FROM available_slots WHERE date = ?",
+              [requestedDate],
+              (err, customSlots) => {
+                if (err) {
+                  console.error("Failed to load available slots:", err);
+                  return res.status(500).json({ error: "Database error" });
+                }
 
-                      // Generate all possible slots
-                      let allSlots = [];
+                db.all(
+                  "SELECT * FROM blocked_slots WHERE date = ?",
+                  [requestedDate],
+                  (err, blockedSlots) => {
+                    if (err) {
+                      console.error("Failed to load blocked slots:", err);
+                      return res.status(500).json({ error: "Database error" });
+                    }
 
-                      // Use custom slots if available, otherwise use working hours
-                      const timeRanges =
-                        customSlots.length > 0 ? customSlots : workingHours;
-
-                      timeRanges.forEach((range) => {
-                        const start = range.start_time.split(":");
-                        const end = range.end_time.split(":");
-                        const startMin =
-                          parseInt(start[0]) * 60 + parseInt(start[1]);
-                        const endMin = parseInt(end[0]) * 60 + parseInt(end[1]);
-
-                        for (
-                          let min = startMin;
-                          min < endMin;
-                          min += parseInt(duration)
-                        ) {
-                          if (min + parseInt(duration) <= endMin) {
-                            const hour = Math.floor(min / 60);
-                            const minute = min % 60;
-                            const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-                            allSlots.push(time);
-                          }
+                    db.all(
+                      'SELECT time, duration FROM bookings WHERE date = ? AND status = "confirmed"',
+                      [requestedDate],
+                      (err, bookedSlots) => {
+                        if (err) {
+                          console.error("Failed to load booked slots:", err);
+                          return res.status(500).json({ error: "Database error" });
                         }
-                      });
 
-                      // Filter out blocked and booked slots
-                      const availableSlots = allSlots.filter((slot) => {
-                        const isBooked = bookedSlots.some(
-                          (b) => b.time === slot,
-                        );
-                        const isBlocked = blockedSlots.some(
-                          (blocked) =>
-                            slot >= blocked.start_time &&
-                            slot < blocked.end_time,
-                        );
-                        return !isBooked && !isBlocked;
-                      });
+                        const timeRanges =
+                          customSlots.length > 0 ? customSlots : workingHours;
+                        const allSlots = [];
 
-                      res.json({
-                        date,
-                        dayOfWeek,
-                        isAvailable: availableSlots.length > 0,
-                        duration: parseInt(duration),
-                        workingHours: timeRanges.map((r) => ({
-                          start: r.start_time,
-                          end: r.end_time,
-                        })),
-                        availableSlots,
-                        bookedCount: bookedSlots.length,
-                        blockedCount: blockedSlots.length,
-                      });
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
-      );
-    },
-  );
-});
+                        timeRanges.forEach((range) => {
+                          const [startHour, startMinute] = range.start_time
+                            .split(":")
+                            .map((v) => parseInt(v, 10));
+                          const [endHour, endMinute] = range.end_time
+                            .split(":")
+                            .map((v) => parseInt(v, 10));
+
+                          const startMin = startHour * 60 + startMinute;
+                          const endMin = endHour * 60 + endMinute;
+
+                          for (
+                            let minute = startMin;
+                            minute < endMin;
+                            minute += normalizedDuration
+                          ) {
+                            if (minute + normalizedDuration <= endMin) {
+                              const hour = Math.floor(minute / 60)
+                                .toString()
+                                .padStart(2, "0");
+                              const mins = (minute % 60)
+                                .toString()
+                                .padStart(2, "0");
+                              allSlots.push(`${hour}:${mins}`);
+                            }
+                          }
+                        });
+
+                        const availableSlots = allSlots.filter((slot) => {
+                          const [slotHour, slotMinute] = slot
+                            .split(":")
+                            .map((value) => parseInt(value, 10));
+                          const slotStart = slotHour * 60 + slotMinute;
+                          const slotEnd = slotStart + normalizedDuration;
+
+                          const isBooked = bookedSlots.some((booking) => {
+                            if (!booking.time) {
+                              return false;
+                            }
+
+                            const [bookingHour, bookingMinute] = booking.time
+                              .split(":")
+                              .map((value) => parseInt(value, 10));
+                            const bookingStart = bookingHour * 60 + bookingMinute;
+                            const bookingDuration = Number(booking.duration) || 0;
+                            const bookingEnd = bookingStart + bookingDuration;
+
+                            return (
+                              bookingDuration > 0 &&
+                              slotStart < bookingEnd &&
+                              slotEnd > bookingStart
+                            );
+                          });
+
+                          if (isBooked) {
+                            return false;
+                          }
+
+                          const isBlocked = blockedSlots.some((blocked) => {
+                            return (
+                              slot >= blocked.start_time &&
+                              slot < blocked.end_time
+                            );
+                          });
+
+                          return !isBlocked;
+                        });
+
+                        res.json({
+                          date: requestedDate,
+                          dayOfWeek,
+                          isAvailable: availableSlots.length > 0,
+                          duration: normalizedDuration,
+                          workingHours: timeRanges.map((range) => ({
+                            start: range.start_time,
+                            end: range.end_time,
+                          })),
+                          availableSlots,
+                          bookedCount: bookedSlots.length,
+                          blockedCount: blockedSlots.length,
+                        });
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  },
+);
 
 // SET AVAILABILITY OVERRIDE (Admin)
 app.post("/api/bookings/availability/override", requireAuth, (req, res) => {

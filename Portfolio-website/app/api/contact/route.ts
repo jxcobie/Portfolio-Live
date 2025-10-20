@@ -1,44 +1,27 @@
 import { NextResponse } from 'next/server';
-import { buildCmsUrl } from '@/lib/env';
+import { contactFormWithHoneypotSchema, createValidationErrorResponse } from '@/lib/validations';
+import { fetchJsonFromCms, MissingCmsApiKeyError } from '@/lib/cms-client';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const parsed = contactFormWithHoneypotSchema.safeParse(body);
 
-    // Validate required fields
-    if (!body.name || !body.email || !body.message) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Name, email, and message are required',
-        },
-        { status: 400 }
-      );
+    if (!parsed.success) {
+      return NextResponse.json(createValidationErrorResponse(parsed.error), {
+        status: 400,
+      });
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.email)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Please provide a valid email address',
-        },
-        { status: 400 }
-      );
-    }
+    const form = parsed.data;
 
-    // Send to CMS
-    const response = await fetch(buildCmsUrl('/api/messages'), {
+    const response = await fetchJsonFromCms('/api/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
-        name: body.name.trim(),
-        email: body.email.trim(),
-        subject: body.subject?.trim() || 'Contact Form Submission',
-        message: body.message.trim(),
+        name: form.name,
+        email: form.email,
+        subject: form.subject || 'Contact Form Submission',
+        message: form.message,
       }),
     });
 
@@ -52,17 +35,14 @@ export async function POST(request: Request) {
     const data = await response.json();
 
     // Track analytics (optional, don't block on this)
-    fetch(buildCmsUrl('/api/analytics/track'), {
+    fetchJsonFromCms('/api/analytics/track', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         event_type: 'contact_form_submission',
         event_data: {
-          name: body.name,
-          email: body.email,
-          subject: body.subject,
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
         },
         page_url: '/contact',
         referrer: request.headers.get('referer') || '',
@@ -77,6 +57,17 @@ export async function POST(request: Request) {
       messageId: data.messageId,
     });
   } catch (error) {
+    if (error instanceof MissingCmsApiKeyError) {
+      console.error('CMS API key missing for contact form submission');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Service temporarily unavailable. Please try again later.',
+        },
+        { status: 503 }
+      );
+    }
+
     console.error('Error in contact API:', error);
 
     return NextResponse.json(
