@@ -58,6 +58,7 @@ Edit `.env` with your configuration:
 CMS_PORT=1337
 NODE_ENV=development
 SESSION_SECRET=your-super-secret-session-key
+CMS_API_KEY=generated-service-token
 DATABASE_PATH=./cms_database.db
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=5242880
@@ -77,7 +78,10 @@ RATE_LIMIT_WINDOW_MINUTES=15
 RATE_LIMIT_MAX_REQUESTS=500
 RATE_LIMIT_AUTH_WINDOW_MINUTES=15
 RATE_LIMIT_AUTH_REQUESTS=10
+
 ```
+
+> 🔐 **Important:** Set `CMS_API_KEY` to a long random string and share it only with trusted services (e.g., the Next.js frontend). Every POST/PUT/DELETE request must include an `x-cms-api-key` header with this value or the CMS will return `401 Unauthorized`.
 
 ### 3. Initialize Database
 
@@ -95,6 +99,7 @@ This creates the SQLite database with all required tables:
 - `testimonials`
 - `analytics`
 - `messages`
+- `bookings`
 
 ### 4. Start the Server
 

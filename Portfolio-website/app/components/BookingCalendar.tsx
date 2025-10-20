@@ -1,12 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Mail, User, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
-
-interface TimeSlot {
-  time: string;
-  available: boolean;
-}
 
 interface WorkingHours {
   start: string;
@@ -22,6 +17,12 @@ interface AvailabilityData {
   blockedCount: number;
   reason?: string;
 }
+
+const MEETING_TYPES = [
+  { value: '30min', label: '30 MIN SESSION', duration: 30 },
+  { value: '60min', label: '60 MIN SESSION', duration: 60 },
+  { value: '90min', label: '90 MIN SESSION', duration: 90 },
+];
 
 export default function BookingCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -40,23 +41,9 @@ export default function BookingCalendar() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const meetingTypes = [
-    { value: '30min', label: '30 MIN SESSION', duration: 30 },
-    { value: '60min', label: '60 MIN SESSION', duration: 60 },
-    { value: '90min', label: '90 MIN SESSION', duration: 90 },
-  ];
+  const meetingTypes = MEETING_TYPES;
 
-  // Get CMS URL with fallback
-  const CMS_URL = process.env.NEXT_PUBLIC_CMS_URL || 'http://localhost:1337';
-
-  // Fetch availability when date or meeting type changes
-  useEffect(() => {
-    if (selectedDate) {
-      fetchAvailability(selectedDate);
-    }
-  }, [selectedDate, formData.meetingType]);
-
-  const fetchAvailability = async (date: Date) => {
+  const fetchAvailability = useCallback(async (date: Date) => {
     setLoadingAvailability(true);
     setSelectedTime(null);
     setError(null);
@@ -66,20 +53,27 @@ export default function BookingCalendar() {
       const duration = meetingTypes.find((t) => t.value === formData.meetingType)?.duration || 30;
 
       const response = await fetch(
-        `${CMS_URL}/api/bookings/availability/${dateStr}?duration=${duration}`
+        `/api/bookings/availability/${dateStr}?duration=${duration}`
       );
 
       if (!response.ok) throw new Error('Failed to fetch availability');
 
       const data = await response.json();
       setAvailability(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error fetching availability:', err);
       setError('❌ CONNECTION_FAILED: Unable to reach booking server');
     } finally {
       setLoadingAvailability(false);
     }
-  };
+  }, [formData.meetingType, meetingTypes]);
+
+  // Fetch availability when date or meeting type changes
+  useEffect(() => {
+    if (selectedDate) {
+      fetchAvailability(selectedDate);
+    }
+  }, [fetchAvailability, selectedDate]);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -122,7 +116,7 @@ export default function BookingCalendar() {
         duration: meetingTypes.find((t) => t.value === formData.meetingType)?.duration || 30,
       };
 
-      const response = await fetch(`${CMS_URL}/api/bookings`, {
+      const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingData),
@@ -146,8 +140,9 @@ export default function BookingCalendar() {
           notes: '',
         });
       }, 5000);
-    } catch (err: any) {
-      setError(`❌ BOOKING_FAILED: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unexpected error';
+      setError(`❌ BOOKING_FAILED: ${message}`);
     } finally {
       setLoading(false);
     }
