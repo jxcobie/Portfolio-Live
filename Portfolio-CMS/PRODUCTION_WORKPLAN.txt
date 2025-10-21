@@ -1,0 +1,155 @@
+Portfolio-CMS — Production Workplan
+
+Objectives
+- Fix API build output path and ESM resolution so `npm --workspace @portfolio-cms/api run start` works reliably.
+- Enforce environment schema with safe defaults; document required envs.
+- Align and wire Prisma (schema, generate, migrations, seeding) for SQLite (or target DB) with deploy flow.
+- Produce reproducible admin UI builds with configurable API base URL.
+- Harden security, logging, health/readiness endpoints, and graceful shutdown.
+- Package via Docker, define compose, and add CI to build/test/deploy.
+
+Phase 1 — Build & Module Resolution (API)
+- tsconfig adjustments
+  - File: tsconfig.base.json
+    - Set: "module": "NodeNext", "moduleResolution": "NodeNext", "verbatimModuleSyntax": true
+  - File: apps/api/tsconfig.json
+    - Set: "rootDir": "src", keep "outDir": "dist"; remove "rootDirs" unless absolutely required.
+    - Ensure no overrides conflict with NodeNext.
+- Relative import extensions (ESM)
+  - Files: apps/api/src/**/*.ts
+    - Change relative imports to include .js extension. Example: `import { createApp } from './app.js'`.
+  - ESLint enforcement
+    - Add import/extensions rule for ESM so relative imports require .js extensions.
+- Start script alignment
+  - File: apps/api/package.json
+    - Ensure build emits `dist/index.js` (rootDir fix above achieves this).
+    - Set: "start": "node dist/index.js"
+    - Add: "prestart": "npm run build"
+- Workspace build order
+  - File: package.json (repo root)
+    - Add: "build": "npm run build --workspaces --if-present"
+
+Phase 2 — Environment & Configuration
+- Env schema (packages/config)
+  - File: packages/config/src/index.ts
+    - Validate with zod (examples):
+      - PORT: number (default 4001); NODE_ENV: enum('development','production','test')
+      - SESSION_SECRET: non-empty (required in production)
+      - DATABASE_URL: valid URL
+      - SMTP_HOST (opt), SMTP_PORT (num), SMTP_USER, SMTP_PASSWORD, SMTP_FROM (opt)
+      - ADMIN_ORIGIN: origin for CORS (string)
+    - Fail fast with readable errors.
+- Samples & docs
+  - Add: .env.example at repo root with placeholders (no secrets).
+  - Update: Portfolio-CMS/README.md with env descriptions and usage.
+
+Phase 3 — Database & Prisma
+- Version alignment
+  - File: apps/api/package.json
+    - Ensure `prisma` and `@prisma/client` use the same minor version (e.g., ^6.x).
+- Schema & migrations
+  - Files: apps/api/prisma/schema.prisma (+ migrations/)
+    - Create or verify schema; run `npx prisma generate` and add migrations:
+      - Dev: `npx prisma migrate dev`.
+      - Prod: `npx prisma migrate deploy`.
+- Seeding
+  - Script: apps/api/prisma/seed.ts
+    - Make idempotent, and only run in dev (or guarded by env flag).
+- Health DB probe
+  - Add `/healthz` to ping Prisma (e.g., `await prisma.$queryRaw` or a trivial find).
+
+Phase 4 — API Runtime Behavior
+- HTTP server
+  - Bind `0.0.0.0` in production, default PORT=4001.
+  - Add graceful shutdown (close HTTP + `await prisma.$disconnect()`).
+- Express & middleware
+  - `app.set('trust proxy', 1)` behind reverse proxy.
+  - CORS: allow `ADMIN_ORIGIN` with credentials where required.
+  - Rate limiting with sane defaults; configurable by env.
+- Sessions
+  - Production: use a persistent session store (e.g., Redis via `connect-redis`) or signed cookies.
+  - Secure cookies in prod: `secure: true`, `sameSite: 'lax'`, `httpOnly: true`.
+
+Phase 5 — Admin UI
+- API base URL
+  - Replace hardcoded endpoints with `import.meta.env.VITE_API_BASE_URL`.
+  - Add `.env.development` and `.env.production` under apps/admin-ui with defaults.
+- Base path
+  - If served under a sub-path, set `base` in `vite.config.ts`.
+- Build
+  - Ensure `npm --workspace @portfolio-cms/admin-ui run build` outputs static assets; document deploy path.
+
+Phase 6 — Logging & Observability
+- Logging standardization
+  - Prefer Pino for structured logs; avoid duplicating Morgan logs.
+  - Set `LOG_LEVEL` via env; add file transport/rotation for prod if needed.
+- Request tracing
+  - Use `pino-http` with `genReqId` and include request ID in responses and downstream logs.
+- Probes
+  - Add `/readiness` and `/liveness` endpoints; readiness includes DB connectivity.
+
+Phase 7 — Testing & Quality
+- Vitest configuration (ESM + restricted envs)
+  - File: apps/api/vitest.config.ts
+    - Configure `pool: 'threads'`, `poolOptions: { threads: { singleThread: true } }` or run with `--threads false`.
+- Tests
+  - Add integration tests (supertest) for auth and CRUD routes; mock sessions where possible.
+  - Ensure `npm run lint --workspaces` and `npm run typecheck --workspaces` pass.
+- Pre-commit hygiene
+  - Add Prettier + lint-staged for formatting and import extension consistency.
+
+Phase 8 — Packaging & Docker
+- API Dockerfile (Dockerfile.api)
+  - Multi-stage: deps → build → runtime.
+  - Copy `dist`, `package*.json`, install production deps only.
+  - Set `NODE_ENV=production`; `CMD ["node", "dist/index.js"]`.
+  - Add Docker `HEALTHCHECK` hitting `/healthz`.
+- Admin Dockerfile (Dockerfile.admin)
+  - Multi-stage Vite build; serve via nginx/alpine or upstream.
+  - Inject `VITE_API_BASE_URL` at build time or support runtime env injection.
+- docker-compose.yml
+  - Services: `api`, `admin`, optional `redis`.
+  - Volumes: SQLite DB (e.g., `/data`), `uploads/` mapped to host.
+  - Expose ports; add restart policies and resource limits.
+
+Phase 9 — CI/CD
+- CI (GitHub Actions)
+  - Node matrix (20/22): install → build → typecheck → lint → test (single-thread if needed).
+  - Build/push Docker images on main; tag with Git SHA.
+- CD
+  - If using Coolify, configure to pull latest images and restart services.
+  - Run `prisma migrate deploy` before starting API container.
+
+Phase 10 — Documentation & Ops
+- README and .env.example
+  - Document envs, build pipeline, health endpoints, and deployment steps.
+- Runbooks
+  - Document DB backups (SQLite file snapshot), log rotation, and session store recovery.
+- Backups
+  - Snapshot `cms_database.db` periodically; document restore procedure.
+
+Concrete Changes (Summary)
+- tsconfig.base.json: set NodeNext + verbatim syntax.
+- apps/api/tsconfig.json: `rootDir: src`, `outDir: dist`.
+- apps/api/src/**/*.ts: add .js to relative imports.
+- apps/api/package.json: `start: node dist/index.js`, add `prestart: npm run build`.
+- packages/config/src/index.ts: strengthen env schema and defaults.
+- apps/api: add `/healthz`, `/readiness`, `/liveness`; enable CORS, trust proxy, rate limiting, secure sessions.
+- apps/admin-ui: use `VITE_API_BASE_URL`; configure `vite.config.ts` base if needed.
+- Dockerfiles: multi-stage builds; compose services and volumes.
+- CI: build/test; push images; run prisma migrate on deploy.
+
+Validation / Retest (single-shot; no watch)
+- Build all: `npm run build --workspaces --if-present`
+- API start: `npm --workspace @portfolio-cms/api run start`
+- Prisma deploy: `npx prisma migrate deploy && npx prisma generate` (from apps/api)
+- Admin build: `npm --workspace @portfolio-cms/admin-ui run build`
+- Tests: `npm --workspace @portfolio-cms/api run test -- --threads false`
+
+MCPs / External Docs
+- No MCP resources configured in this environment. If available, use a Context7 Docs MCP to fetch and verify:
+  - TypeScript NodeNext + ESM extensions guidance.
+  - Prisma v6 migration/generate/seed best practices.
+  - Express-session, helmet, CORS recommendations.
+  - Vite v6 env and base path configuration.
+

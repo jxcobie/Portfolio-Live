@@ -1,0 +1,49 @@
+{
+  "name": "@portfolio-cms/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts --env-file ../../.env",
+    "build": "tsc --project tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "prisma:pull": "prisma db pull",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@portfolio-cms/config": "file:../../packages/config",
+    "@portfolio-cms/core": "file:../../packages/core",
+    "@prisma/client": "^6.2.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.1.5",
+    "express-session": "^1.17.3",
+    "helmet": "^7.2.0",
+    "morgan": "^1.10.0",
+    "pino": "^9.6.0",
+    "pino-http": "^10.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.7",
+    "@types/express-session": "^1.17.7",
+    "@types/supertest": "^2.0.16",
+    "@types/node": "^22.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.23.0",
+    "@typescript-eslint/parser": "^8.23.0",
+    "eslint": "^9.21.0",
+    "supertest": "^7.0.0",
+    "prisma": "^6.17.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.4"
+  }
+}

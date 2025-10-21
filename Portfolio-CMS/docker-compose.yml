@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    volumes:
+      - ./cms_database.db:/app/cms_database.db
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+    environment:
+      - VITE_ENABLE_NEW_ADMIN=true
+    depends_on:
+      - api
+    ports:
+      - "4173:80"
+    restart: unless-stopped

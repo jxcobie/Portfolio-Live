@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+@layer utilities {
+  .text-muted-foreground {
+    @apply text-slate-400;
+  }
+}

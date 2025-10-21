@@ -1,0 +1,19 @@
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/admin-ui/package.json apps/admin-ui/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY packages/config/package.json packages/config/package.json
+COPY packages/core/package.json packages/core/package.json
+
+RUN npm install
+
+COPY . .
+ENV VITE_ENABLE_NEW_ADMIN=true
+RUN npm run build:admin
+
+FROM nginx:alpine
+COPY --from=build /app/apps/admin-ui/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

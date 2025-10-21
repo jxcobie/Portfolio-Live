@@ -37,3 +37,7 @@ backups/
 tmp/
 temp/
 *.tmp
+coverage/
+
+# Prisma generated client
+generated/

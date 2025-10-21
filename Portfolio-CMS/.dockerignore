@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+Dockerfile*
+docker-compose.yml
+.git
+.gitignore
+backups
+coverage
+apps/admin-ui/dist
+apps/api/dist

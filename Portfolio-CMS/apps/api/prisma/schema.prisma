@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model analytics {
+  id         Int       @id @default(autoincrement())
+  event_type String
+  event_data String?
+  page_url   String?
+  referrer   String?
+  ip_address String?
+  user_agent String?
+  session_id String?
+  created_at DateTime? @default(now())
+}
+
+model messages {
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String
+  subject     String?
+  message     String
+  is_read     Boolean?  @default(false)
+  is_archived Boolean?  @default(false)
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime? @default(now())
+
+  @@index([created_at], map: "idx_messages_created_at")
+}
+
+model project_images {
+  id         Int       @id @default(autoincrement())
+  project_id Int?
+  image_url  String
+  image_type String?   @default("cover")
+  alt_text   String?
+  caption    String?
+  sort_order Int?      @default(0)
+  created_at DateTime? @default(now())
+  projects   projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model project_technologies {
+  project_id    Int?
+  technology_id Int?
+  technologies  technologies? @relation(fields: [technology_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects      projects?     @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([project_id, technology_id])
+  @@ignore
+}
+
+model projects {
+  id                      Int                    @id @default(autoincrement())
+  title                   String
+  slug                    String                 @unique(map: "sqlite_autoindex_projects_1")
+  description             String?
+  short_description       String?
+  status                  String?                @default("In Dev")
+  category                String?
+  client                  String?
+  duration                String?
+  role                    String?
+  team_size               Int?
+  live_url                String?
+  repo_url                String?
+  demo_url                String?
+  case_study_url          String?
+  featured                Boolean?               @default(false)
+  sort_order              Int?                   @default(0)
+  overview                String?
+  challenge               String?
+  solution                String?
+  process                 String?
+  results                 String?
+  testimonial             String?
+  lessons_learned         String?
+  technical_details       String?
+  performance_improvement String?
+  user_growth             String?
+  revenue_impact          String?
+  meta_title              String?
+  meta_description        String?
+  keywords                String?
+  project_date            DateTime?
+  created_at              DateTime?              @default(now())
+  updated_at              DateTime?              @default(now())
+  project_images          project_images[]
+  project_technologies    project_technologies[] @ignore
+
+  @@index([slug], map: "idx_projects_slug")
+}
+
+model technologies {
+  id                   Int                    @id @default(autoincrement())
+  name                 String                 @unique(map: "sqlite_autoindex_technologies_1")
+  category             String?
+  icon_url             String?
+  created_at           DateTime?              @default(now())
+  project_technologies project_technologies[] @ignore
+}
+
+model users {
+  id         Int       @id @default(autoincrement())
+  username   String    @unique(map: "sqlite_autoindex_users_1")
+  password   String
+  role       String?   @default("admin")
+  created_at DateTime? @default(now())
+}
+
+model bookings {
+  id              Int                 @id @default(autoincrement())
+  name            String
+  email           String
+  phone           String?
+  date            String
+  time            String
+  duration        Int
+  meeting_type    String
+  notes           String?
+  status          String?            @default("confirmed")
+  meeting_link    String?
+  google_event_id String?
+  created_at      DateTime?          @default(now())
+  updated_at      DateTime?          @default(now())
+  booking_reminders booking_reminders[]
+
+  @@index([date], map: "idx_bookings_date")
+  @@index([status], map: "idx_bookings_status")
+}
+
+model booking_reminders {
+  id            Int       @id @default(autoincrement())
+  booking_id    Int
+  reminder_type String?
+  sent_at       DateTime?
+  bookings      bookings @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+}
+
+model working_hours {
+  id          Int       @id @default(autoincrement())
+  day_of_week Int
+  start_time  String
+  end_time    String
+  is_working  Boolean?  @default(true)
+  created_at  DateTime? @default(now())
+}
+
+model availability_overrides {
+  id           Int       @id @default(autoincrement())
+  date         String    @unique
+  is_available Boolean
+  custom_hours String?
+  reason       String?
+  created_at   DateTime? @default(now())
+
+  @@index([date], map: "idx_availability_overrides_date")
+}
+
+model blocked_slots {
+  id         Int       @id @default(autoincrement())
+  date       String
+  start_time String
+  end_time   String
+  reason     String?
+  created_at DateTime? @default(now())
+
+  @@index([date], map: "idx_blocked_slots_date")
+}
+
+model available_slots {
+  id            Int       @id @default(autoincrement())
+  date          String
+  start_time    String
+  end_time      String
+  slot_duration Int?      @default(30)
+  notes         String?
+  created_at    DateTime? @default(now())
+
+  @@index([date], map: "idx_available_slots_date")
+}

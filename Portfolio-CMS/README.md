@@ -11,29 +11,49 @@ A lightweight, custom-built CMS for managing portfolio content with SQLite datab
 - 💾 **SQLite Database**: Lightweight, file-based database
 - 🚀 **RESTful API**: Clean API endpoints for all operations
 
+## Architecture Overview
+
+- **Workspaces**: `apps/api` (TypeScript Express API) and `apps/admin-ui` (Vite + React SPA), backed by
+  shared packages in `packages/*`.
+- **Feature flag**: Toggle `VITE_ENABLE_NEW_ADMIN` to roll out the SPA gradually. When disabled, the
+  API returns `LEGACY_ADMIN_URL`, which you can point to a maintenance experience or alternate UI.
+- **Environment management**: Strongly typed with Zod in `@portfolio-cms/config`.
+- **Security**: Helmet-driven CSP, session cookies, rate limiting, and structured logging are baked
+  into the API.
+- **API surface**: `/api/v2/projects`, `/api/v2/messages`, `/api/v2/bookings`, and `/api/v2/stats`
+  deliver Prisma-backed data. `/api/v1/*` proxies exist to keep legacy clients functioning until they
+  migrate.
+
 ## Tech Stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: SQLite3
+- **Runtime**: Node.js (legacy server on JavaScript, new services on Node 18+ with TypeScript)
+- **Framework**: Express.js (legacy + modern API)
+- **Database**: SQLite3 (Prisma integration planned)
 - **File Upload**: Multer
 - **CORS**: Enabled for frontend integration
+- **Admin UI (new)**: Vite, React 19, TailwindCSS, shadcn-inspired primitives
 
 ## Directory Structure
 
 ```
 Portfolio-CMS/
-├── server.js           # Main Express server
-├── cms_database.db     # SQLite database file
-├── package.json        # Dependencies and scripts
-├── .env.example        # Environment variables template
-├── scripts/            # Utility scripts
-│   ├── init-db.js      # Initialize database schema
-│   ├── backup-db.js    # Database backup utility
-│   └── test-endpoints.js # API endpoint tests
-├── uploads/            # Uploaded files storage
-└── admin/              # Admin panel (if any)
+├── apps/
+│   ├── api/                    # TypeScript API (Express + Prisma)
+│   │   ├── prisma/             # Prisma schema, migrations, seed scripts
+│   │   └── src/                # Routes (v1 adapters + v2), services, utils
+│   └── admin-ui/               # Vite + React admin SPA
+├── packages/
+│   ├── config/                 # Environment loader + Zod schema
+│   └── core/                   # Shared domain types
+├── generated/prisma            # Prisma client output (gitignored)
+├── Dockerfile.api / Dockerfile.admin
+├── docker-compose.yml
+├── tsconfig.base.json / eslint.config.mjs / .prettierrc.json
+└── cms_database.db             # SQLite content store
 ```
+
+All workflow commands now run through the workspaces (API + admin); the legacy Node server and static
+admin UI have been fully retired.
 
 ## Installation
 
@@ -44,396 +64,126 @@ cd Portfolio-CMS
 npm install
 ```
 
+Use the workspace-aware scripts to work on the CMS:
+
+```bash
+# Run the API (tsx + TypeScript)
+npm run dev:api
+
+# Run the admin SPA (set VITE_ENABLE_NEW_ADMIN=true to render it)
+npm run dev:admin
+
+# Build both packages for CI
+npm run build:api
+npm run build:admin
+
+# Database introspection / client generation (Prisma)
+npm run prisma:pull   # Sync schema from cms_database.db
+npm run prisma:generate
+npm run prisma:seed --workspace @portfolio-cms/api
+```
+
+The Prisma client is generated to `generated/prisma` (ignored from source control) and consumed via
+`getPrismaClient()` in the API. Booking and scheduling tables are now provisioned through Prisma
+migrations, and the seed script populates default working hours. `/api/v2/stats` and the admin SPA
+now pull live counts for projects, unread messages, and upcoming confirmed bookings.
+
+### 3. Security Hardening
+
+- Helmet ships with a CSP allowing only same-origin resources for scripts (with inline styles for
+  Tailwind) and standard anti-MIME headers.
+- Sessions use `express-session` (+ secure cookies in production). Ensure `SESSION_SECRET` is at
+  least 32 characters and swap in a persistent session store (Redis, Postgres, etc.) before going to
+  production.
+- `express-rate-limit` protects the API (`500` requests / 15 minutes / IP). Tune via `.env` or
+  override in `app.ts` if needed.
+- CORS honours `ALLOWED_ORIGINS` (comma-separated) for the admin SPA and any other front-ends.
+
+### 4. Testing Workflow
+
+- `npm run test --workspace @portfolio-cms/api` → Vitest for service + route coverage.
+- `npm run lint`, `npm run typecheck`, `npm run build:api`, `npm run build:admin` → CI friendly
+  health checks.
+
+### 5. Containerization
+
+- `Dockerfile.api` builds the TypeScript API and prunes dev dependencies before runtime.
+- `Dockerfile.admin` builds the SPA and serves it with Nginx.
+- `docker-compose.yml` ties both together (API on `4000`, Admin on `4173`). Mount
+  `cms_database.db` via a volume for persistence.
+
+### 6. Deploying with Coolify (GUI v4+)
+
+1. In Coolify, create a new **Docker Compose** application pointing to this repository/branch.
+2. Paste the `docker-compose.yml` contents into the Coolify compose editor.
+3. Define environment variables (or attach an `.env` file). Required: `SESSION_SECRET`, `PORT=4000`,
+   SMTP credentials, `ALLOWED_ORIGINS`, `LEGACY_ADMIN_URL`. Add a persistent volume mapping to
+   `/app/cms_database.db` for the API service.
+4. Configure ports: publish API `4000`, Admin `4173` (Coolify default domain can map to 4173).
+5. Deploy; Coolify will build both images. Run migrations by allowing the API container to start with
+   the mounted database file.
+6. Use Coolify's built-in HTTP tester to verify `/api/health` and `/api/v2/stats`. When comfortable,
+   set `VITE_ENABLE_NEW_ADMIN=true` (either via env or redeploying the admin container) to enable the
+   new SPA, otherwise the legacy admin stays as fallback.
+
 ### 2. Environment Setup
 
-Create a `.env` file from the example:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your configuration:
+Copy `.env.example` (or start from `.env` below) and adjust the values for your environment. At a
+minimum:
 
 ```env
-CMS_PORT=1337
 NODE_ENV=development
-SESSION_SECRET=your-super-secret-session-key
-CMS_API_KEY=generated-service-token
-DATABASE_PATH=./cms_database.db
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=5242880
-ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
-
-# Bootstrap admin (set a strong password or leave blank to auto-generate on init)
-CMS_BOOTSTRAP_ADMIN_USER=admin
-CMS_BOOTSTRAP_ADMIN_PASSWORD=
-
-# Optional overrides for scripts/tests
-CMS_BASE_URL=http://localhost:1337
-CMS_ADMIN_USER=
-CMS_ADMIN_PASSWORD=
-
-# Rate limiting
-RATE_LIMIT_WINDOW_MINUTES=15
-RATE_LIMIT_MAX_REQUESTS=500
-RATE_LIMIT_AUTH_WINDOW_MINUTES=15
-RATE_LIMIT_AUTH_REQUESTS=10
-
+PORT=4000
+SESSION_SECRET=change-me-super-secret-key
+DATABASE_URL="file:./cms_database.db"
+LEGACY_ADMIN_URL=http://localhost:4173
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173
 ```
 
-> 🔐 **Important:** Set `CMS_API_KEY` to a long random string and share it only with trusted services (e.g., the Next.js frontend). Every POST/PUT/DELETE request must include an `x-cms-api-key` header with this value or the CMS will return `401 Unauthorized`.
-
-### 3. Initialize Database
-
-```bash
-npm run db:init
-```
-
-> ℹ️ If `CMS_BOOTSTRAP_ADMIN_PASSWORD` is empty, the init script will generate a temporary password and print it to the console. Store it securely and update your `.env` (or secrets manager) before deploying.
-
-This creates the SQLite database with all required tables:
-
-- `personal_info`
-- `skills`
-- `projects`
-- `testimonials`
-- `analytics`
-- `messages`
-- `bookings`
-
-### 4. Start the Server
-
-**Development:**
-
-```bash
-npm run dev
-```
-
-**Production:**
-
-```bash
-npm start
-```
-
-The CMS will be available at `http://localhost:3002`
-
-## API Endpoints
-
-### Portfolio Management
-
-#### Get All Portfolio Data
-
-```http
-GET /api/portfolio/public
-```
-
-#### Update Portfolio Section
-
-```http
-PUT /api/portfolio
-Headers: x-api-key: your-api-key
-Body: {
-  "section": "personal|skills|projects|testimonials",
-  "data": {...}
-}
-```
-
-#### Delete Portfolio Item
-
-```http
-DELETE /api/portfolio
-Headers: x-api-key: your-api-key
-Body: {
-  "section": "projects|testimonials|skills",
-  "id": number
-}
-```
-
-### Projects
-
-#### Get All Projects
-
-```http
-GET /api/projects/public?page=1&limit=12
-```
-
-#### Get Featured Projects
-
-```http
-GET /api/projects/featured
-```
-
-#### Get Project by ID
-
-```http
-GET /api/projects/public/:id
-```
-
-### Analytics
-
-#### Track Event
-
-```http
-POST /api/analytics/track
-Body: {
-  "event_type": "page_view|button_click|...",
-  "page_url": "/",
-  "user_agent": "...",
-  ...
-}
-```
-
-### File Upload
-
-#### Upload Image
-
-```http
-POST /api/upload
-Headers: x-api-key: your-api-key
-Body: multipart/form-data with "image" field
-```
-
-### Contact Messages
-
-#### Submit Contact Form
-
-```http
-POST /api/contact
-Body: {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "message": "Hello!"
-}
-```
-
-## Scripts
-
-| Script                   | Description                           |
-| ------------------------ | ------------------------------------- |
-| `npm start`              | Start production server               |
-| `npm run dev`            | Start development server with nodemon |
-| `npm run db:init`        | Initialize database                   |
-| `npm run db:backup`      | Backup database                       |
-| `npm run test:endpoints` | Test all API endpoints                |
-
-## Database Schema
-
-### personal_info
-
-- `id` (INTEGER, PRIMARY KEY)
-- `name`, `title`, `tagline`, `about`
-- `email`, `linkedin`, `github`, `location`
-- `experience`, `avatar`, `resume`
-
-### skills
-
-- `id` (INTEGER, PRIMARY KEY)
-- `category` (TEXT)
-- `skills` (JSON array)
-- `icon`, `level`, `order`
-
-### projects
-
-- `id` (INTEGER, PRIMARY KEY)
-- `title`, `slug`, `description`
-- `status`, `technologies` (JSON)
-- `liveUrl`, `repoUrl`, `coverImage`
-- `featured` (BOOLEAN)
-- `createdAt`, `updatedAt`
-
-### testimonials
-
-- `id` (INTEGER, PRIMARY KEY)
-- `name`, `company`, `position`
-- `text`, `rating` (1-5)
-- `date`, `avatar`, `verified`
-
-### analytics
-
-- `id` (INTEGER, PRIMARY KEY)
-- `event_type`, `event_data` (JSON)
-- `page_url`, `user_agent`
-- `ip_address`, `timestamp`
-
-### messages
-
-- `id` (INTEGER, PRIMARY KEY)
-- `name`, `email`, `subject`, `message`
-- `status` (new|read|replied|archived)
-- `createdAt`, `readAt`, `repliedAt`
-
-## Security
-
-### Authentication
-
-- **API Key**: All write operations require `x-api-key` header
-- Store API key securely in `.env` file
-- Never commit `.env` to version control
-
-### CORS
-
-- Configured allowed origins in `.env`
-- Default: `http://localhost:3000`
-- Update for production domains
-
-### File Upload
-
-- Max file size: 5MB (configurable)
-- Allowed formats: jpg, jpeg, png, gif, webp
-- Files stored in `./uploads/` directory
-
-### Rate Limiting
-
-- Implement rate limiting in production
-- Use Redis or memory store
-- Recommended: 100 requests per 15 minutes
-
-## Deployment
-
-### Production Checklist
-
-1. **Environment Variables**
-
-   ```env
-   NODE_ENV=production
-   PORT=3002
-   API_KEY=<strong-random-key>
-   ALLOWED_ORIGINS=https://yourdomain.com
-   ```
-
-2. **Database Backup**
-
-   ```bash
-   npm run db:backup
-   ```
-
-3. **Process Manager**
-
-   ```bash
-   # Using PM2
-   pm2 start server.js --name portfolio-cms
-   pm2 save
-   pm2 startup
-   ```
-
-4. **Reverse Proxy (Nginx)**
-
-   ```nginx
-   location /api/ {
-       proxy_pass http://localhost:3002;
-       proxy_http_version 1.1;
-       proxy_set_header Upgrade $http_upgrade;
-       proxy_set_header Connection 'upgrade';
-       proxy_set_header Host $host;
-       proxy_cache_bypass $http_upgrade;
-   }
-   ```
-
-5. **SSL Certificate**
-   - Use Let's Encrypt with Certbot
-   - Or use Cloudflare for SSL termination
-
-### Docker Deployment (Optional)
-
-Create `Dockerfile`:
-
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 3002
-CMD ["node", "server.js"]
-```
-
-Build and run:
-
-```bash
-docker build -t portfolio-cms .
-docker run -p 3002:3002 --env-file .env portfolio-cms
-```
-
-## Database Maintenance
-
-### Backup
-
-```bash
-npm run db:backup
-# Creates: backups/cms_database_YYYY-MM-DD_HH-MM-SS.db
-```
-
-### Restore
-
-```bash
-cp backups/cms_database_YYYY-MM-DD_HH-MM-SS.db cms_database.db
-```
-
-### Reset Database
-
-```bash
-rm cms_database.db
-npm run db:init
-```
-
-## Integration with Portfolio Website
-
-### Environment Setup (Portfolio-website)
-
-Add to `.env.local`:
-
-```env
-CMS_INTERNAL_URL=http://localhost:1337
-NEXT_PUBLIC_CMS_URL=http://localhost:1337
-CMS_API_KEY=your-api-key-here
-```
-
-### Fetching Data
-
-```typescript
-// In your Next.js app
-const cmsBaseUrl =
-  process.env.CMS_INTERNAL_URL ||
-  process.env.NEXT_PUBLIC_CMS_URL ||
-  "http://localhost:1337";
-
-const response = await fetch(`${cmsBaseUrl}/api/portfolio/public`);
-const data = await response.json();
-```
-
-### Updating Data (Admin Only)
-
-```typescript
-const cmsBaseUrl =
-  process.env.CMS_INTERNAL_URL ||
-  process.env.NEXT_PUBLIC_CMS_URL ||
-  "http://localhost:1337";
-
-const response = await fetch(`${cmsBaseUrl}/api/portfolio`, {
-  method: "PUT",
-  headers: {
-    "Content-Type": "application/json",
-    "x-api-key": process.env.CMS_API_KEY,
-  },
-  body: JSON.stringify({
-    section: "projects",
-    data: {
-      /* ... */
-    },
-  }),
-});
-```
-
+Set `SESSION_SECRET` to a long random string in production. If you prefer Postgres, update
+`DATABASE_URL` accordingly (Prisma ships with migrations for SQLite and easily targets Postgres).
+
+## API Quick Reference
+
+| Endpoint                     | Description                                       |
+| ---------------------------- | ------------------------------------------------- |
+| `GET /api/v2/stats`          | Summary counts for projects, messages, bookings   |
+| `GET /api/v2/projects`       | Paginated projects (`status`, `search`, `page`)   |
+| `GET /api/v2/messages`       | Paginated inbox (`status=read|unread`)            |
+| `GET /api/v2/bookings`       | Paginated bookings (`upcoming`, `status`, `date`) |
+| `POST /api/v2/bookings`      | Create booking (awaits notification integrations) |
+| `PATCH /api/v2/bookings/:id` | Update booking status                             |
+
+> All endpoints return JSON; authenticated admin routes expect session cookies. When the SPA feature
+> flag is disabled, clients can poll `/api/v1/legacy-admin` to learn where to redirect users.
+
+## Useful Scripts
+
+| Script                  | Description                             |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Run the API in watch mode               |
+| `npm run dev:admin`     | Run the admin SPA (Vite dev server)     |
+| `npm run build:api`     | Compile the API TypeScript output       |
+| `npm run build:admin`   | Create a production SPA bundle          |
+| `npm run test`          | Run Vitest suites (API services/routes) |
+| `npm run prisma:seed`   | Populate working hours & defaults       |
+
+## Production Notes
+
+- Use Docker images or the Docker Compose stack supplied in the repo (`docker-compose.yml`).
+- Mount `cms_database.db` on durable storage or switch `DATABASE_URL` to a managed Postgres instance.
+- Swap the in-memory session store for Redis/Postgres via `express-session` before high-traffic use.
+- Configure HTTPS (Coolify can provision Let's Encrypt automatically; otherwise place Nginx in front).
 ## Troubleshooting
 
 ### Port Already in Use
 
 ```bash
-# Find process using port 3002
-netstat -ano | findstr :3002  # Windows
-lsof -i :3002                 # Mac/Linux
+# Find process using port 4000 (API)
+netstat -ano | findstr :4000  # Windows
+lsof -i :4000                 # Mac/Linux
 
-# Kill process
+# Kill process if safe
 taskkill /PID <PID> /F        # Windows
 kill -9 <PID>                 # Mac/Linux
 ```
@@ -444,7 +194,7 @@ kill -9 <PID>                 # Mac/Linux
 # Close all connections to database
 rm cms_database.db-journal
 
-# If persists, restart server
+# If it persists, restart the API container/process
 ```
 
 ### CORS Errors
@@ -453,22 +203,16 @@ rm cms_database.db-journal
 2. Ensure origins include protocol: `https://domain.com`
 3. Restart server after changing `.env`
 
-## Development
+## Development Tips
 
-### Adding New Endpoints
-
-1. Add route in `server.js`
-2. Implement handler function
-3. Add to `scripts/test-endpoints.js`
-4. Test with `npm run test:endpoints`
-5. Update this README
-
-### Database Migrations
-
-1. Backup current database
-2. Modify schema in `scripts/init-db.js`
-3. Create migration script
-4. Test on development database first
+- **Routes & Adapters**: Add new REST resources under `apps/api/src/routes/v2` (and proxy through
+  `v1` if legacy clients still consume the older signature).
+- **Services**: Keep Prisma logic inside `apps/api/src/services/*`, returning plain objects for easy
+  testing.
+- **Migrations**: Define changes in `apps/api/prisma/schema.prisma`, then run `npm run prisma:pull`
+  (if introspecting), `prisma migrate dev`, and regenerate the client.
+- **Testing**: Add Vitest specs under `apps/api/tests/` to cover new behaviour; `npm run test` ensures
+  they run in CI.
 
 ## License
 
